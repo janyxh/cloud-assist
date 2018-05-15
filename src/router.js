@@ -1,9 +1,7 @@
 import React from "react";
 import { Route, Switch } from "react-router-dom";
-// import { getMenu } from "../api/api";
 import Login from "./Pages/Login";
 import Frame from "./Pages/Frame";
-// import Test from "./Pages/Test";
 import Virtual from "./Pages/Device/Virtual";
 import Games from "./Pages/Appstore/Games";
 import Gameschannel from "./Pages/Appstore/Gameschannel";
@@ -26,7 +24,6 @@ class RootRouter extends React.Component {
         <Route exact path="/" component={Login} />
         <Frame>
           <Switch>
-            {/* <Route exact path="/Test" component={Test} /> */}
             <Route exact path="/Virtual" component={Virtual} />
             <Route path="/Games" component={Games} />
             <Route path="/Gameschannel" component={Gameschannel} />
