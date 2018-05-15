@@ -1,0 +1,35 @@
+const params = {};
+getUserList(params)
+    .then(res => {
+    console.log(res);
+    const { code } = res;
+    if (code === "00") {
+        // data = res.data;
+        this.setState({ data: res.data });
+    } else {
+        message.error(res.message);
+    }
+    })
+    .catch(e => {
+    console.log(e);
+    });
+
+
+    
+  // getAppType = () => {
+  //   console.log("我是axios里来的类型接口");
+  //   const params = {};
+  //   getAppTypeList(params)
+  //     .then(res => {
+  //       console.log(res);
+  //       const { code } = res;
+  //       if (code === "00") {
+  //         this.setState({ data: res.data });
+  //       } else {
+  //         message.error(res.message);
+  //       }
+  //     })
+  //     .catch(e => {
+  //       console.log(e);
+  //     });
+  // };

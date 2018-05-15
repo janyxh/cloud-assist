@@ -1,0 +1,31 @@
+
+.components-form-demo-normal-login {
+    max-width: 400px;
+    margin: 20vh auto;
+  }
+  .components-form-demo-normal-login .logo {
+    // display: flex;
+    width: 27rem;
+    height: 6rem;
+    margin: auto;
+    text-align: center;
+    padding: 1rem;
+    position: relative;
+    i {
+      position: absolute;
+      left: 4rem;
+      vertical-align: middle;
+    }
+    span {
+      color: #1890ff;
+      font-size: 2rem;
+      position: absolute;
+      left: 8rem;
+    }
+  }
+  .components-form-demo-normal-login .login-form-forgot {
+    float: right;
+  }
+  .components-form-demo-normal-login .login-form-button {
+    width: 100%;
+  }

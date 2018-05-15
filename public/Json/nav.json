@@ -1,0 +1,75 @@
+[
+  {
+    "name": "虚拟机管理",
+    "icon": "desktop",
+    "single": true,
+    "path": "/virtual"
+  },
+  {
+    "name": "应用管理",
+    "icon": "appstore-o",
+    "single": false,
+    "sub": [
+      {
+        "name": "游戏管理",
+        "path": "/games"
+      },
+      {
+        "name": "游戏渠道包管理",
+        "path": "/gameschannel"
+      }
+    ]
+  },
+  {
+    "name": "商品管理",
+    "icon": "shopping-cart",
+    "single": true,
+    "path": "/goods"
+  },
+  {
+    "name": "任务单管理",
+    "icon": "profile",
+    "single": true,
+    "path": "/task"
+  },
+  {
+    "name": "充值订单管理",
+    "icon": "pay-circle-o",
+    "single": true,
+    "path": "/recharge"
+  },
+  {
+    "name": "用户管理",
+    "icon": "user",
+    "single": false,
+    "sub": [
+      {
+        "name": "用户管理",
+        "path": "/appusers"
+      }
+    ]
+  },
+  {
+    "name": "资金管理",
+    "icon": "wallet",
+    "single": true,
+    "path": "/capital"
+  },
+  {
+    "name": "脚本管理",
+    "icon": "code-o",
+    "single": true,
+    "path": "/script"
+  },
+  {
+    "name": "权限管理",
+    "icon": "fork",
+    "single": false,
+    "sub": [
+      {
+        "name": "用户管理",
+        "path": "/user"
+      }
+    ]
+  }
+]

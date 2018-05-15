@@ -1,0 +1,461 @@
+import React from "react";
+import VirtualForm from "../../../Component/Device/Virtual/Form";
+import GamesAdd from "../../../Component/AppStore/Games/Add";
+import { Table, message, Button, Popconfirm } from "antd";
+import {
+  servers,
+  serversAction,
+  addGame,
+  modifyGame,
+  deleteGame
+} from "../../../api/api";
+import moment from "moment";
+
+class Games extends React.Component {
+  constructor(props) {
+    super();
+    this.state = {
+      loading: true,
+      selectedRowKeys: [],
+      data: [],
+      dataType: [],
+      dataClassify: [],
+      searchParams: {},
+      pagination: {
+        pageSize: 10,
+        current: 1,
+        total: 0,
+        onChange: this.onChange
+      },
+      visible: false,
+      confirmLoading: false,
+      isEdit: false,
+      values: {},
+      imgUrl: ""
+    };
+    this.getList = this.getList.bind(this);
+
+    this.showModal = this.showModal.bind(this);
+    this.handleOk = this.handleOk.bind(this);
+    this.handleCancel = this.handleCancel.bind(this);
+    this.onChange = this.onChange.bind(this);
+  }
+
+  confirm = id => {
+    const params = {
+      game_id: id
+    };
+    deleteGame(params)
+      .then(res => {
+        const { code } = res;
+        if (code === "00") {
+          message.success(res.message);
+          this.getList({});
+        } else {
+          message.error(res.message);
+        }
+      })
+      .catch(e => {
+        console.error(e);
+      });
+  };
+  componentDidMount() {
+    this.getList({});
+  }
+
+  // ---------------------------------------------  获取列表   -------------------------------------------------
+
+  // 获取列表
+  getList = params => {
+    servers(params)
+      .then(res => {
+        this.setState({ loading: false });
+        const { code } = res;
+        if (code === "00") {
+          if (res.data) {
+            this.setState({
+              data: res.data.list,
+              pagination: { total: res.data.total, current: res.pageNum }
+            });
+          } else {
+            this.setState({
+              data: [],
+              pagination: { total: 0, current: 1 }
+            });
+          }
+        } else {
+          message.error(res.message);
+        }
+      })
+      .catch(e => {
+        console.error(e);
+      });
+  };
+
+  // ---------------------------------------------  搜索   -------------------------------------------------
+
+  // 搜索
+  handelSearch = params => {
+    const gameParams = params;
+
+    // 转换时间格式
+    if (gameParams && gameParams.created_at) {
+      gameParams.created_from =
+        moment(gameParams.created_at[0]).format("YYYY-MM-DD") + " 00:00:00";
+      gameParams.created_to =
+        moment(gameParams.created_at[1]).format("YYYY-MM-DD") + " 23:59:59";
+    } else if (
+      gameParams &&
+      !gameParams.created_at &&
+      gameParams.created_from
+    ) {
+      gameParams.created_from = "";
+      gameParams.created_to = "";
+    }
+
+    if (gameParams && gameParams.updated_at) {
+      gameParams.updated_from =
+        moment(gameParams.updated_at[0]).format("YYYY-MM-DD") + " 00:00:00";
+      gameParams.updated_to =
+        moment(gameParams.updated_at[1]).format("YYYY-MM-DD") + " 23:59:59";
+    } else if (
+      gameParams &&
+      !gameParams.updated_at &&
+      gameParams.updated_from
+    ) {
+      gameParams.updated_from = "";
+      gameParams.updated_to = "";
+    }
+
+    delete gameParams.created_at;
+    delete gameParams.updated_at;
+
+    // 转换应用类型格式
+    const objDataType = this.state.dataType.find(item => {
+      return item.id === gameParams.app_big_type;
+    });
+    if (objDataType) {
+      gameParams.app_big_type = objDataType.appTypeName;
+    }
+
+    // 转换分类格式
+    const objClassify = this.state.dataType.find(item => {
+      return item.id === gameParams.app_small_type;
+    });
+    if (objClassify) {
+      gameParams.app_small_type = objClassify.appTypeName;
+    }
+
+    this.setState({
+      searchParams: Object.assign(this.state.searchParams, gameParams)
+    });
+
+    this.getList(this.state.searchParams);
+  };
+
+  // 重置
+  handleReset = () => {
+    this.getList({});
+  };
+
+  // ---------------------------------------------  分页   -------------------------------------------------
+
+  // 选择当前第几页
+  onChange = page => {
+    this.setState({
+      pagination: {
+        current: page
+      },
+      searchParams: Object.assign(this.state.searchParams, { page: page })
+    });
+
+    this.getList(this.state.searchParams);
+  };
+
+  // ---------------------------------------------  操作   -------------------------------------------------
+  
+  // 重启重置
+  handleAction = (type, server_id) => {
+    const params = {
+      type: type
+    };
+    serversAction(server_id, params)
+      .then(res => {
+        console.log(res);
+        const { code } = res;
+        if (code === "00") {
+          message.success(res.message);
+        } else {
+          message.error(res.message);
+        }
+      })
+      .catch(e => {
+        console.log(e);
+      });
+  };
+
+  // 选中表格
+  onSelectChange = (selectedRowKeys) => {
+    console.log('selectedRowKeys changed: ', selectedRowKeys);
+    this.setState({ selectedRowKeys });
+  }
+  // ---------------------------------------------  新增编辑弹出框   -------------------------------------------------
+
+  // 打开弹出框
+  showModal = () => {};
+
+  // 编辑
+  handleEdit = values => {
+    this.setState({
+      isEdit: true,
+      values: Object.assign(this.state.values, values),
+      visible: true
+    });
+    const img = values.game_icon;
+    this.setState({
+      imgUrl: img
+    });
+  };
+
+  handleSetIcon = imgUrl => {
+    this.setState({ imgUrl: imgUrl });
+  };
+
+  // 点击弹出框的确定
+  handleOk = (values, isEdit) => {
+    console.log("点击ok");
+    this.setState({
+      confirmLoading: true
+    });
+
+    const params = values;
+
+    // 转换应用类型格式
+    const objDataType = this.state.dataType.find(item => {
+      return item.id === params.app_big_type;
+    });
+    if (objDataType) {
+      params.app_big_type = objDataType.appTypeName;
+    }
+
+    if (!isEdit) {
+      addGame(params)
+        .then(res => {
+          const { code } = res;
+          if (code === "00") {
+            this.setState({
+              visible: false,
+              confirmLoading: false
+            });
+            message.success(res.message);
+            this.getList({});
+          } else {
+            message.error(res.message);
+          }
+        })
+        .catch(e => {
+          console.error(e);
+        });
+    } else {
+      params.game_id = this.state.values.game_id;
+      modifyGame(params)
+        .then(res => {
+          const { code } = res;
+          if (code === "00") {
+            this.setState({
+              visible: false,
+              confirmLoading: false
+            });
+            message.success(res.message);
+            this.getList({});
+          } else {
+            message.error(res.message);
+          }
+        })
+        .catch(e => {
+          console.error(e);
+        });
+    }
+  };
+
+  // 点击弹出框的取消
+  handleCancel = () => {
+    console.log("Clicked cancel button");
+    this.setState({
+      visible: false
+    });
+  };
+
+  render() {
+    const columns = [
+      {
+        title: "序号",
+        key: "index",
+        render: (text, record, index) => {
+          return index + 1;
+        }
+      },
+      {
+        title: "虚拟机ID",
+        dataIndex: "server_id",
+        key: "server_id"
+      },
+      {
+        title: "物理机ID",
+        dataIndex: "physics_id",
+        key: "physics_id"
+      },
+      {
+        title: "虚拟机状态",
+        dataIndex: "server_status",
+        key: "server_status"
+      },
+      {
+        title: "设备占用状态",
+        dataIndex: "occupy_status",
+        key: "occupy_status"
+      },
+      {
+        title: "视频流连接状态",
+        dataIndex: "connect_status",
+        key: "connect_status"
+      },
+      {
+        title: "用户ID",
+        dataIndex: "user_id",
+        key: "user_id"
+      },
+      {
+        title: "内网IP",
+        dataIndex: "",
+        key: ""
+      },
+      {
+        title: "外网IP",
+        dataIndex: "spice_ip",
+        key: "spice_ip"
+      },
+      {
+        title: "外网端口",
+        dataIndex: "spice_port",
+        key: "spice_port"
+      },
+      {
+        title: "分组",
+        dataIndex: "",
+        key: ""
+      },
+      {
+        title: "是否禁用",
+        key: "is_forbidden",
+        render: (text, record, index) => {
+          return record.is_forbidden ? "是" : "否";
+        }
+      },
+      {
+        title: "创建时间",
+        dataIndex: "created_at",
+        key: "created_at",
+        width: 110
+      },
+      {
+        title: "更新时间",
+        dataIndex: "updated_at",
+        key: "updated_at",
+        width: 110
+      },
+      {
+        title: "操作",
+        key: "action",
+        render: (text, record) => {
+          // console.log(text);
+          // console.log(record);
+          return (
+            <div className="action">
+              <Popconfirm
+                title="你确定要重启吗?"
+                onConfirm={this.handleAction.bind(
+                  this,
+                  "reboot",
+                  record.server_id
+                )}
+                okText="是"
+                cancelText="否"
+              >
+                <a className="danger">重启</a>
+              </Popconfirm>
+              <Popconfirm
+                title="你确定要重置吗?"
+                onConfirm={this.handleAction.bind(
+                  this,
+                  "reset",
+                  record.server_id
+                )}
+                okText="是"
+                cancelText="否"
+              >
+                <a className="danger">重置</a>
+              </Popconfirm>
+            </div>
+          );
+        }
+      }
+    ];
+    const { selectedRowKeys } = this.state;
+    const rowSelection = {
+      selectedRowKeys,
+      onChange: this.onSelectChange
+    };
+    return (
+      <div>
+        <h1>虚拟机管理</h1>
+        <hr />
+
+        <div className="btns-operation">
+          <Button onClick={this.showModal}>禁用</Button>
+          <Button onClick={this.showModal}>启用</Button>
+          <Button onClick={this.handleAction.bind(this, "reboot")}>
+            重启手机
+          </Button>
+          <Button onClick={this.handleAction.bind(this, "reset")}>
+            重置手机
+          </Button>
+          <Button onClick={this.showModal}>查看设备连接</Button>
+          <Button onClick={this.showModal}>查看设备操作</Button>
+          <Button onClick={this.showModal}>分组管理</Button>
+          <Button onClick={this.showModal}>变更分组</Button>
+        </div>
+        <VirtualForm
+          params={this.state.searchParams}
+          dataType={this.state.dataType}
+          dataClassify={this.state.dataClassify}
+          handelSearch={this.handelSearch}
+          handleReset={this.handleReset}
+        />
+        <Table
+          className="table-padding"
+          rowKey="server_id"
+          loading={this.state.loading}
+          dataSource={this.state.data}
+          columns={columns}
+          pagination={this.state.pagination}
+          rowSelection={rowSelection}
+        />
+        <GamesAdd
+          visible={this.state.visible}
+          confirmLoading={this.state.confirmLoading}
+          isEdit={this.state.isEdit}
+          values={this.state.values}
+          imgUrl={this.state.imgUrl}
+          dataType={this.state.dataType}
+          dataClassify={this.state.dataClassify}
+          handleSetIcon={this.handleSetIcon}
+          handleOk={this.handleOk}
+          handleCancel={this.handleCancel}
+        />
+      </div>
+    );
+  }
+}
+
+export default Games;
