@@ -53,15 +53,17 @@ class Left extends React.Component {
       <aside>
         <div className="logo">
           <Icon type="cloud-o" style={{ fontSize: 60, color: "#ffffff" }} />
-          <h2>云平台管理系统</h2>
+          <h2>云辅助管理系统</h2>
         </div>
-        <span style={{ color: "#ddd", margin: "0 20px" }}>
-          你好，{this.state.nickName}
-        </span>
+        <p>
+          <span style={{ color: "#ddd", margin: "0 20px" }}>
+            你好，{this.state.nickName}
+          </span>
 
-        <a onClick={this.handleSignOut}>
-          <Icon type="logout" />&nbsp;退出
-        </a>
+          <a onClick={this.handleSignOut}>
+            <Icon type="logout" />&nbsp;退出
+          </a>
+        </p>
         <Menu />
       </aside>
     );

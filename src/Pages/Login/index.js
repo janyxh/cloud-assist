@@ -7,6 +7,17 @@ import { Form, Icon, Input, Button, message } from "antd";
 const FormItem = Form.Item;
 
 class NormalLoginForm extends React.Component {
+  componentWillMount() {
+    document.onkeyup = event => {
+      var e = event || window.event;
+      if (e && e.keyCode === 13) {
+        //回车键的键值为13
+        this.handleSubmit(e); //调用登录按钮的登录事件
+      }
+    };
+  }
+
+  // 登录
   handleSubmit = e => {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
@@ -21,10 +32,11 @@ class NormalLoginForm extends React.Component {
               //   pathname: '/virtual',
               //   nickName: res.data.cloudUserVO.nickName
               //   }
-              // console.log(res.data.cloudUserVO.nickName)
               sessionStorage.setItem("userName", res.data.cloudUserVO.nickName);
+              sessionStorage.setItem("SelectedKeys", `key${0}`);
+              sessionStorage.setItem("OpenKeys", "");
               // setTimeout(() => {
-                this.props.history.push("/virtual");
+              this.props.history.push("/virtual");
               // }, 3000);
             } else {
               message.error(res.message);

@@ -3,6 +3,7 @@ import moment from "moment";
 import AppUsersForm from "../../../Component/AppUsers/Form";
 import { Table, message } from "antd";
 import { selectAppUsers } from "../../../api/api";
+import { getDurning, GetTimeOutput } from "../../../Common";
 
 class AppUsers extends React.Component {
   constructor(props) {
@@ -30,6 +31,7 @@ class AppUsers extends React.Component {
 
   // 获取列表
   getList = params => {
+    params = Object.assign(params, { page_size: 10 });
     selectAppUsers(params)
       .then(res => {
         this.setState({ loading: false });
@@ -38,7 +40,10 @@ class AppUsers extends React.Component {
           if (res.data) {
             this.setState({
               data: res.data.list,
-              pagination: { total: res.total, current: res.page_index }
+              pagination: {
+                total: res.data.total,
+                current: res.data.page_index
+              }
             });
           } else {
             this.setState({
@@ -58,33 +63,23 @@ class AppUsers extends React.Component {
   // ---------------------------------------------  搜索   -------------------------------------------------
 
   handelSearch = params => {
+    delete this.state.searchParams.page;
     const gameParams = params;
     // if (gameParams.user_id !== "") {
     //   gameParams.user_id = Number(gameParams.user_id);
     // }
     // 转换时间格式
-    if (gameParams && gameParams.created_at) {
-      gameParams.min_created_at =
-        moment(gameParams.created_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.max_created_at =
-        moment(gameParams.created_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.created_at &&
-      gameParams.min_created_at
-    ) {
-      gameParams.min_created_at = "";
-      gameParams.max_created_at = "";
-    }
+    getDurning(gameParams, "created_at", "min_created_at", "max_created_at");
 
-    delete gameParams.created_at;
-
-    this.setState({
-      searchParams: Object.assign(this.state.searchParams, gameParams),
-      loading: true
-    });
-    console.log(this.state.searchParams);
-    this.getList(this.state.searchParams);
+    this.setState(
+      {
+        searchParams: gameParams,
+        loading: true
+      },
+      () => {
+        this.getList(this.state.searchParams);
+      }
+    );
   };
 
   // 重置
@@ -104,7 +99,10 @@ class AppUsers extends React.Component {
       pagination: {
         current: page
       },
-      searchParams: Object.assign(this.state.searchParams, { page: page })
+      searchParams: Object.assign(this.state.searchParams, {
+        page_index: page
+      }),
+      loading: true
     });
 
     this.getList(this.state.searchParams);
@@ -161,7 +159,9 @@ class AppUsers extends React.Component {
         key: "created_at",
         width: 110,
         render: (text, record, index) => {
-          return moment(record.created_at).format("YYYY-MM-DD hh:mm:ss");
+          let time = GetTimeOutput(record.created_at);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
         }
       }
     ];

@@ -1,5 +1,5 @@
 import React from "react";
-// import "./user.css";
+import { disabledDate } from "../../Common";
 import { Form, Row, Col, Input, Button, DatePicker } from "antd";
 const FormItem = Form.Item;
 const { RangePicker } = DatePicker;
@@ -9,6 +9,9 @@ class GamesSearchForm extends React.Component {
   handleSearch = e => {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
+      if (err) {
+        return;
+      }
       this.props.handelSearch(values);
     });
   };
@@ -18,6 +21,15 @@ class GamesSearchForm extends React.Component {
     this.props.form.resetFields();
     this.props.handleReset();
   };
+
+  // 验证用户ID
+  // userIdValidate = (rule, value, callback) => {
+  //   if (value !== "" && value && !Number.isInteger(Number(value))) {
+  //     callback(new Error("请输入整数"));
+  //   } else {
+  //     callback();
+  //   }
+  // };
 
   render() {
     const { getFieldDecorator } = this.props.form;
@@ -31,8 +43,9 @@ class GamesSearchForm extends React.Component {
                   {
                     required: false
                   }
+                  // { validator: this.userIdValidate }
                 ]
-              })(<Input type="number" placeholder="请输入用户ID" />)}
+              })(<Input maxLength="9" placeholder="请输入用户ID" />)}
             </FormItem>
           </Col>
           {/* <Col span={4}>
@@ -97,10 +110,12 @@ class GamesSearchForm extends React.Component {
                     message: "Input something!"
                   }
                 ]
-              })(<RangePicker format="YYYY-MM-DD" />)}
+              })(
+                <RangePicker format="YYYY-MM-DD" disabledDate={disabledDate} />
+              )}
             </FormItem>
           </Col>
-          <Col span={4}>
+          <Col span={6}>
             <FormItem>
               <Button type="primary" htmlType="submit" icon="search">
                 搜索

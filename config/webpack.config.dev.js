@@ -26,17 +26,18 @@ const env = getClientEnvironment(publicUrl);
 // It is focused on developer experience and fast rebuilds.
 // The production configuration is different and lives in a separate file.
 module.exports = {
-  devServer: {
-    hot: true,
-    inline: true,
-    port: 8080,
-    proxy: {
-      "/test": {
-        target: "https://192.168.60.129:8080",
-        changeOrigin: true
-      }
-    }
-  },
+  // devServer: {
+  //   port: "3000", //设置端口号
+  //   //其实很简单的，只要配置这个参数就可以了
+  //   proxy: {
+  //     // 请求到 '/api' 下 的请求都会被代理到 target： http://debug.xxx.com 中
+  //     "/api/*": {
+  //       target: "http://192.168.15.159:80/api",
+  //       secure: false, // 接受 运行在 https 上的服务
+  //       changeOrigin: true
+  //     }
+  //   }
+  // },
   // You may want 'eval' instead if you prefer to see the compiled output in DevTools.
   // See the discussion in https://github.com/facebookincubator/create-react-app/issues/343.
   // devtool: "cheap-module-source-map",

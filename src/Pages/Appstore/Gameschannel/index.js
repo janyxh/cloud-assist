@@ -8,21 +8,25 @@ import {
   selectApps,
   getAppTypeList,
   getClassifyList,
+  getGameInfo,
   addApps,
   editApps,
   deleteApp
 } from "../../../api/api";
 import moment from "moment";
+import { GetTimeOutput, getDurning, handleTableWidth } from "../../../Common";
 
 class Games extends React.Component {
   constructor(props) {
     super();
     this.state = {
       loading: true, // 列表loading
+      tableScroll: handleTableWidth(1600, 1800), // 表格宽度
       data: [], // 列表data
       gameList: [], // 游戏列表数组（新增用）
       dataType: [], // 应用类型数组
       dataClassify: [], // 分类
+      appPlatform: undefined,
       searchParams: {}, // 搜索筛选参数
       pagination: {
         // 表格分页参数
@@ -43,6 +47,7 @@ class Games extends React.Component {
       valuesInstall: {}, // 安装卸载弹出框  传入参数
       gameName: ""
     };
+    this.onWindowResize = this.onWindowResize.bind(this);
     this.getList = this.getList.bind(this);
     this.getGameList = this.getGameList.bind(this);
     this.getAppType = this.getAppType.bind(this);
@@ -57,8 +62,17 @@ class Games extends React.Component {
   componentDidMount() {
     this.getList({});
     this.getAppType();
+    window.addEventListener("resize", this.onWindowResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.onWindowResize);
   }
 
+  onWindowResize = () => {
+    this.setState({
+      tableScroll: handleTableWidth(1600, 1800)
+    });
+  };
   // ---------------------------------------------  获取列表   -------------------------------------------------
 
   // 获取列表
@@ -71,7 +85,7 @@ class Games extends React.Component {
           if (res.data) {
             this.setState({
               data: res.data.list,
-              pagination: { total: res.data.total, current: res.pageNum }
+              pagination: { total: res.data.total, current: res.data.pageNum }
             });
           } else {
             this.setState({
@@ -89,20 +103,19 @@ class Games extends React.Component {
   };
 
   // 获取游戏列表
-  getGameList = params => {
+  getGameList = () => {
+    const params = { size: 500 };
     selectGame(params)
       .then(res => {
         this.setState({ loading: false });
         const { code } = res;
         if (code === "00") {
-          console.log(res);
           let arr = [];
-          // res.data.list.map(item => {
-          //   arr.push(item.game_name);
-          // });
-          res.data.list.forEach(item => {
-            arr.push({ game_id: item.game_id, game_name: item.game_name });
-          });
+          if (res.data.list && res.data.list.length > 0) {
+            res.data.list.forEach(item => {
+              arr.push({ game_id: item.game_id, game_name: item.game_name });
+            });
+          }
 
           this.setState({
             gameList: arr
@@ -152,42 +165,35 @@ class Games extends React.Component {
       });
   };
 
+  // 根据游戏id获取所属平台
+  getAppPlatform = gameId => {
+    const params = {
+      game_id: gameId,
+      fields: "app_platform"
+    };
+    getGameInfo(params)
+      .then(res => {
+        const { code } = res;
+        if (code === "00") {
+          this.setState({ appPlatform: res.data.app_platform });
+        } else {
+          message.error(res.message);
+        }
+      })
+      .catch(e => {
+        console.error(e);
+      });
+  };
+
   // ---------------------------------------------  搜索   -------------------------------------------------
 
   handelSearch = params => {
+    delete this.state.searchParams.page;
     const gameParams = params;
 
     // 转换时间格式
-    if (gameParams && gameParams.created_at) {
-      gameParams.created_from =
-        moment(gameParams.created_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.created_to =
-        moment(gameParams.created_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.created_at &&
-      gameParams.created_from
-    ) {
-      gameParams.created_from = "";
-      gameParams.created_to = "";
-    }
-
-    if (gameParams && gameParams.updated_at) {
-      gameParams.updated_from =
-        moment(gameParams.updated_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.updated_to =
-        moment(gameParams.updated_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.updated_at &&
-      gameParams.updated_from
-    ) {
-      gameParams.updated_from = "";
-      gameParams.updated_to = "";
-    }
-
-    delete gameParams.created_at;
-    delete gameParams.updated_at;
+    getDurning(gameParams, "created_at", "created_from", "created_to");
+    getDurning(gameParams, "updated_at", "updated_from", "updated_to");
 
     // 转换应用类型格式
     const objDataType = this.state.dataType.find(item => {
@@ -205,12 +211,15 @@ class Games extends React.Component {
       gameParams.app_small_type = objClassify.appTypeName;
     }
 
-    this.setState({
-      searchParams: Object.assign(this.state.searchParams, gameParams),
-      loading: true
-    });
-
-    this.getList(this.state.searchParams);
+    this.setState(
+      {
+        searchParams: gameParams,
+        loading: true
+      },
+      () => {
+        this.getList(this.state.searchParams);
+      }
+    );
   };
 
   // 重置
@@ -231,9 +240,9 @@ class Games extends React.Component {
       pagination: {
         current: page
       },
-      searchParams: Object.assign(this.state.searchParams, { page: page })
+      searchParams: Object.assign(this.state.searchParams, { page: page }),
+      loading: true
     });
-
     this.getList(this.state.searchParams);
   };
 
@@ -241,25 +250,60 @@ class Games extends React.Component {
 
   // 打开弹出框
   showModal = () => {
-    this.setState({
-      isEdit: false,
-      visible: true,
-      values: {},
-      apkUrl: ""
-    });
+    this.setState(
+      {
+        isEdit: false,
+        visible: true,
+        values: {},
+        apkUrl: ""
+      },
+      () => {
+        if (
+          document.querySelectorAll(".ant-modal-body") &&
+          document.querySelectorAll(".ant-modal-body").length > 0
+        ) {
+          setTimeout(() => {
+            document.querySelectorAll(".ant-modal-body").forEach(element => {
+              element.scrollTop = 0;
+            });
+          }, 50);
+        }
+      }
+    );
     this.getGameList();
   };
 
   // 编辑
   handleEdit = values => {
-    this.setState({
-      isEdit: true,
-      visible: true,
-      confirmLoading: false,
-      values: Object.assign(this.state.values, values),
-      game_info: Object.assign(this.state.game_info, values.game_info),
-      apkUrl: values.resource_address
-    });
+    // detailApp(values.app_id)
+    //   .then(res => {
+    //     console.log(res);
+    //   })
+    //   .catch(e => {
+    //     console.error(e);
+    //   });
+    this.setState(
+      {
+        isEdit: true,
+        visible: true,
+        confirmLoading: false,
+        values: Object.assign(this.state.values, values),
+        game_info: Object.assign(this.state.game_info, values.game_info),
+        apkUrl: values.resource_address
+      },
+      () => {
+        if (
+          document.querySelectorAll(".ant-modal-body") &&
+          document.querySelectorAll(".ant-modal-body").length > 0
+        ) {
+          setTimeout(() => {
+            document.querySelectorAll(".ant-modal-body").forEach(element => {
+              element.scrollTop = 0;
+            });
+          }, 50);
+        }
+      }
+    );
     console.log(this.state.values);
     this.getGameList();
   };
@@ -275,21 +319,16 @@ class Games extends React.Component {
   };
 
   // 点击弹出框的确定
-  handleOk = (values, isEdit) => {
+  handleOk = (values, isEdit, fn) => {
     console.log("点击ok");
+    delete this.state.searchParams.page;
     this.setState({
       confirmLoading: true
     });
 
     const params = values;
 
-    // 转换应用类型格式
-    const objDataType = this.state.dataType.find(item => {
-      return item.id === params.app_big_type;
-    });
-    if (objDataType) {
-      params.app_big_type = objDataType.appTypeName;
-    }
+    params.app_size = Math.round(parseFloat(values.app_size) * 100) / 100;
     console.log(params);
     if (!isEdit) {
       addApps(params)
@@ -298,10 +337,15 @@ class Games extends React.Component {
           if (code === "00") {
             this.setState({
               visible: false,
-              apkUrl: ""
+              confirmLoading: false,
+              apkUrl: "",
+              values: {},
+              game_info: {},
+              appPlatform: undefined
             });
             message.success(res.message);
-            this.getList({});
+            this.getList(this.state.searchParams);
+            fn && fn();
           } else {
             message.error(res.message);
             this.setState({
@@ -322,10 +366,12 @@ class Games extends React.Component {
               confirmLoading: false,
               apkUrl: "",
               values: {},
-              game_info: {}
+              game_info: {},
+              appPlatform: undefined
             });
             message.success(res.message);
-            this.getList({});
+            this.getList(this.state.searchParams);
+            fn && fn();
           } else {
             message.error(res.message);
             this.setState({
@@ -345,7 +391,10 @@ class Games extends React.Component {
     this.setState({
       visible: false,
       gameList: [],
-      game_info: {}
+      game_info: {},
+      loadingUploadApk: false,
+      apkUrl: "",
+      appPlatform: undefined
     });
   };
 
@@ -353,12 +402,17 @@ class Games extends React.Component {
 
   // 打开弹出框
   handleInstall = (isInstall, values) => {
-    this.setState({
-      visibleInstall: true,
-      isInstall: isInstall,
-      valuesInstall: Object.assign(this.state.valuesInstall, values),
-      gameName: values.game_info.game_name
-    });
+    this.setState(
+      {
+        visibleInstall: true,
+        isInstall: isInstall,
+        valuesInstall: Object.assign(this.state.valuesInstall, values),
+        gameName: values.game_info.game_name
+      },
+      () => {
+        this.refs.GameschannelInstall.handleGetList();
+      }
+    );
     console.log(this.state.gameName);
   };
 
@@ -373,13 +427,14 @@ class Games extends React.Component {
   // ---------------------------------------------  删除   -------------------------------------------------
 
   confirm = id => {
+    delete this.state.searchParams.page;
     const params = id;
     deleteApp(params)
       .then(res => {
         const { code } = res;
         if (code === "00") {
           message.success(res.message);
-          this.getList({});
+          this.getList(this.state.searchParams);
         } else {
           message.error(res.message);
         }
@@ -394,29 +449,33 @@ class Games extends React.Component {
       {
         title: "序号",
         key: "index",
+        // width: 80,
         render: (text, record, index) => {
           return index + 1;
         }
       },
       {
-        title: "APPID",
+        title: "APP ID",
         dataIndex: "app_id",
         key: "app_id"
+        // width: 100
       },
       {
         title: "应用ID",
         dataIndex: "game_info.game_id",
         key: "game_info.game_id"
+        // width: 100
       },
       {
         title: "应用名称",
         dataIndex: "game_info.game_name",
         key: "game_info.game_name"
+        // width: 140
       },
       {
         title: "ROOT权限",
         key: "is_root",
-        width: 80,
+        // width: 80,
         render: (text, record, index) => {
           return record.is_root ? "是" : "否";
         }
@@ -425,41 +484,54 @@ class Games extends React.Component {
         title: "应用类型",
         dataIndex: "game_info.app_big_type",
         key: "game_info.app_big_type"
+        // width: 100
       },
       {
         title: "分类",
         dataIndex: "game_info.app_small_type",
         key: "game_info.app_small_type"
+        // width: 100
       },
       {
         title: "所属平台",
         dataIndex: "game_info.app_platform",
         key: "game_info.app_platform"
+        // width: 120
+      },
+      {
+        title: "应用包名",
+        dataIndex: "package_name",
+        key: "package_name",
+        width: 150
       },
       {
         title: "厂商",
         dataIndex: "game_info.vendor",
         key: "game_info.vendor"
+        // width: 100
       },
       {
         title: "渠道商",
         dataIndex: "channel_name",
         key: "channel_name"
+        // width: 200
       },
       {
         title: "版本号",
         dataIndex: "version",
         key: "version"
+        // width: 100
       },
       {
         title: "应用大小",
         dataIndex: "app_size",
         key: "app_size"
+        // width: 100
       },
       {
         title: "应用上架状态",
         key: "game_info.shelf_status",
-        width: 100,
+        // width: 100,
         render: (text, record, index) => {
           return record.game_info.shelf_status ? "上架" : "下架";
         }
@@ -467,7 +539,7 @@ class Games extends React.Component {
       {
         title: "渠道展示状态",
         key: "channel_show",
-        width: 100,
+        // width: 100,
         render: (text, record, index) => {
           return record.channel_show ? "展示" : "隐藏";
         }
@@ -475,7 +547,7 @@ class Games extends React.Component {
       {
         title: "是否自动更新",
         key: "auto_update",
-        width: 100,
+        // width: 100,
         render: (text, record, index) => {
           return record.auto_update ? "是" : "否";
         }
@@ -484,23 +556,33 @@ class Games extends React.Component {
         title: "已安装数量",
         dataIndex: "install_device_count",
         key: "install_device_count"
+        // width: 100
       },
       {
         title: "创建时间",
-        dataIndex: "created_at",
         key: "created_at",
-        width: 110
+        width: 110,
+        render: (text, record, index) => {
+          let time = GetTimeOutput(record.created_at);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
+        }
       },
       {
         title: "更新时间",
-        dataIndex: "updated_at",
         key: "updated_at",
-        width: 110
+        width: 110,
+        render: (text, record, index) => {
+          let time = GetTimeOutput(record.updated_at);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
+        }
       },
       {
         title: "操作",
         key: "action",
-        width: 140,
+        width: 120,
+        fixed: document.body.clientWidth <= 1600 ? "right" : "",
         render: (text, record) => {
           // console.log(text);
           // console.log(record);
@@ -546,6 +628,7 @@ class Games extends React.Component {
           dataSource={this.state.data}
           columns={columns}
           pagination={this.state.pagination}
+          scroll={this.state.tableScroll}
         />
         <GameschannelAdd
           visible={this.state.visible}
@@ -557,14 +640,15 @@ class Games extends React.Component {
           handleSetApk={this.handleSetApk}
           handleUploadLoading={this.handleUploadLoading}
           loadingUploadApk={this.state.loadingUploadApk}
-          dataType={this.state.dataType}
-          dataClassify={this.state.dataClassify}
+          appPlatform={this.state.appPlatform}
+          getAppPlatform={this.getAppPlatform}
           gameList={this.state.gameList}
           onChangeDataType={this.getClassify}
           handleOk={this.handleOk}
           handleCancel={this.handleCancel}
         />
         <GameschannelInstall
+          ref="GameschannelInstall"
           visibleInstall={this.state.visibleInstall}
           isInstall={this.state.isInstall}
           valuesInstall={this.state.valuesInstall}

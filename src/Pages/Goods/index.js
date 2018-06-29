@@ -9,6 +9,7 @@ import {
   updateGamePoint,
   delGamePoint
 } from "../../api/api";
+import { getDurning, GetTimeOutput } from "../../Common";
 
 class Task extends React.Component {
   constructor(props) {
@@ -48,7 +49,7 @@ class Task extends React.Component {
           if (res.data) {
             this.setState({
               data: res.data.list,
-              pagination: { total: res.total, current: res.page_index }
+              pagination: { total: res.data.total, current: res.data.pageNum }
             });
           } else {
             this.setState({
@@ -68,45 +69,21 @@ class Task extends React.Component {
   // ---------------------------------------------  搜索   -------------------------------------------------
 
   handelSearch = params => {
+    delete this.state.searchParams.page;
     const gameParams = params;
     // 转换时间格式
-    if (gameParams && gameParams.created_at) {
-      gameParams.createdAtStart =
-        moment(gameParams.created_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.createdAtEnd =
-        moment(gameParams.created_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.created_at &&
-      gameParams.createdAtStart
-    ) {
-      gameParams.createdAtStart = "";
-      gameParams.createdAtEnd = "";
-    }
+    getDurning(gameParams, "created_at", "createdAtStart", "createdAtEnd");
+    getDurning(gameParams, "updated_at", "updatedAtStart", "updatedAtEnd");
 
-    if (gameParams && gameParams.update_at) {
-      gameParams.updatedAtStart =
-        moment(gameParams.update_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.updatedAtEnd =
-        moment(gameParams.update_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.update_at &&
-      gameParams.updatedAtStart
-    ) {
-      gameParams.updatedAtStart = "";
-      gameParams.updatedAtEnd = "";
-    }
-
-    delete gameParams.created_at;
-    delete gameParams.update_at;
-
-    this.setState({
-      searchParams: Object.assign(this.state.searchParams, gameParams),
-      loading: true
-    });
-    console.log(this.state.searchParams);
-    this.getList(this.state.searchParams);
+    this.setState(
+      {
+        searchParams: gameParams,
+        loading: true
+      },
+      () => {
+        this.getList(this.state.searchParams);
+      }
+    );
   };
 
   // 重置
@@ -126,7 +103,8 @@ class Task extends React.Component {
       pagination: {
         current: page
       },
-      searchParams: Object.assign(this.state.searchParams, { page: page })
+      searchParams: Object.assign(this.state.searchParams, { page: page }),
+      loading: true
     });
 
     this.getList(this.state.searchParams);
@@ -136,32 +114,59 @@ class Task extends React.Component {
 
   // 打开弹出框
   showModal = () => {
-    this.setState({
-      isEdit: false,
-      visible: true,
-      values: {}
-    });
+    this.setState(
+      {
+        isEdit: false,
+        visible: true,
+        values: {}
+      },
+      () => {
+        if (
+          document.querySelectorAll(".ant-modal-body") &&
+          document.querySelectorAll(".ant-modal-body").length > 0
+        ) {
+          setTimeout(() => {
+            document.querySelectorAll(".ant-modal-body").forEach(element => {
+              element.scrollTop = 0;
+            });
+          }, 50);
+        }
+      }
+    );
   };
 
   // 编辑
   handleEdit = values => {
-    this.setState({
-      isEdit: true,
-      visible: true,
-      values: Object.assign(this.state.values, values)
-    });
+    this.setState(
+      {
+        isEdit: true,
+        visible: true,
+        values: Object.assign(this.state.values, values)
+      },
+      () => {
+        if (
+          document.querySelectorAll(".ant-modal-body") &&
+          document.querySelectorAll(".ant-modal-body").length > 0
+        ) {
+          setTimeout(() => {
+            document.querySelectorAll(".ant-modal-body").forEach(element => {
+              element.scrollTop = 0;
+            });
+          }, 50);
+        }
+      }
+    );
   };
 
   // 点击弹出框的确定
-  handleOk = (values, isEdit) => {
-    console.log("点击ok");
+  handleOk = (values, isEdit, fn) => {
+    delete this.state.searchParams.page;
     this.setState({
       confirmLoading: true
     });
 
     const params = values;
 
-    console.log(params);
     if (!isEdit) {
       addGamePoint(params)
         .then(res => {
@@ -170,10 +175,10 @@ class Task extends React.Component {
             this.setState({
               visible: false,
               confirmLoading: false,
-              scriptUrl: ""
+              values: {}
             });
             message.success(res.message);
-            this.getList({});
+            this.getList(this.state.searchParams);
           } else {
             message.error(res.message);
             this.setState({
@@ -191,14 +196,24 @@ class Task extends React.Component {
         .then(res => {
           const { code } = res;
           if (code === "00") {
-            this.setState({
-              visible: false,
-              confirmLoading: false,
-              scriptUrl: "",
-              values: {}
-            });
+            this.setState(
+              {
+                visible: false,
+                confirmLoading: false
+              },
+              () => {
+                fn && fn();
+              }
+            );
+            // setTimeout(() => {
+            //   this.setState({
+            //     values: {}
+            //   });
+            // }, 50);
+
             message.success(res.message);
-            this.getList({});
+            this.getList(this.state.searchParams);
+            fn && fn();
           } else {
             message.error(res.message);
             this.setState({
@@ -214,7 +229,6 @@ class Task extends React.Component {
 
   // 关闭弹出框
   handleCancel = () => {
-    console.log("Clicked cancel button");
     this.setState({
       visible: false
     });
@@ -223,6 +237,7 @@ class Task extends React.Component {
   // ---------------------------------------------  删除   -------------------------------------------------
   // 删除
   confirm = id => {
+    delete this.state.searchParams.page;
     const params = {
       id: id
     };
@@ -231,7 +246,7 @@ class Task extends React.Component {
         const { code } = res;
         if (code === "00") {
           message.success(res.message);
-          this.getList({});
+          this.getList(this.state.searchParams);
         } else {
           message.error(res.message);
         }
@@ -273,9 +288,18 @@ class Task extends React.Component {
         key: "amount"
       },
       {
-        title: "商品价格",
-        dataIndex: "price",
-        key: "price"
+        title: "商品价格(元)",
+        key: "price",
+        render: (text, record) => {
+          return record.price / 100;
+        }
+      },
+      {
+        title: "商品单价",
+        key: "univalent",
+        render: (text, record) => {
+          return (record.price / record.amount / 100).toFixed(2);
+        }
       },
       {
         title: "商品描述",
@@ -313,7 +337,9 @@ class Task extends React.Component {
         key: "createdAt",
         width: 110,
         render: (text, record, index) => {
-          return moment(record.createdAt).format("YYYY-MM-DD hh:mm:ss");
+          let time = GetTimeOutput(record.createdAt);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
         }
       },
       {
@@ -321,16 +347,16 @@ class Task extends React.Component {
         key: "updatedAt",
         width: 110,
         render: (text, record, index) => {
-          return moment(record.updatedAt).format("YYYY-MM-DD hh:mm:ss");
+          let time = GetTimeOutput(record.updatedAt);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
         }
       },
       {
         title: "操作",
         key: "action",
-        width: 140,
+        width: 100,
         render: (text, record) => {
-          // console.log(text);
-          // console.log(record);
           return (
             <div className="action">
               <a onClick={this.handleEdit.bind(this, record)}>编辑</a>
@@ -373,7 +399,6 @@ class Task extends React.Component {
           confirmLoading={this.state.confirmLoading}
           isEdit={this.state.isEdit}
           values={this.state.values}
-          handleUploadLoading={this.handleUploadLoading}
           handleOk={this.handleOk}
           handleCancel={this.handleCancel}
         />

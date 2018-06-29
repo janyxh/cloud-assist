@@ -1,9 +1,24 @@
 [
   {
-    "name": "虚拟机管理",
+    "name": "云手机管理",
     "icon": "desktop",
     "single": true,
     "path": "/virtual"
+  },
+  {
+    "name": "OTA升级",
+    "icon": "to-top",
+    "single": false,
+    "sub": [
+      {
+        "name": "镜像包管理",
+        "path": "/ota"
+      },
+      {
+        "name": "OTA升级记录",
+        "path": "/OTARecord"
+      }
+    ]
   },
   {
     "name": "应用管理",
@@ -17,6 +32,10 @@
       {
         "name": "游戏渠道包管理",
         "path": "/gameschannel"
+      },
+      {
+        "name": "安装卸载任务",
+        "path": "/InstallRecord"
       }
     ]
   },
@@ -39,15 +58,10 @@
     "path": "/recharge"
   },
   {
-    "name": "用户管理",
+    "name": "APP用户管理",
     "icon": "user",
-    "single": false,
-    "sub": [
-      {
-        "name": "用户管理",
-        "path": "/appusers"
-      }
-    ]
+    "single": true,
+    "path": "/appusers"
   },
   {
     "name": "资金管理",
@@ -62,14 +76,9 @@
     "path": "/script"
   },
   {
-    "name": "权限管理",
+    "name": "用户管理",
     "icon": "fork",
-    "single": false,
-    "sub": [
-      {
-        "name": "用户管理",
-        "path": "/user"
-      }
-    ]
+    "single": true,
+    "path": "/user"
   }
 ]

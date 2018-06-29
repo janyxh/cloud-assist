@@ -5,7 +5,6 @@ a.danger {
   color: #ff4d4f;
 }
 hr {
-  // border: 1px solid #ccc;
   height: 1px;
   border: none;
   border-top: 1px solid #e8e8e8;
@@ -16,8 +15,12 @@ hr {
   position: relative;
   aside {
     width: 240px;
-    min-height: 100vh;
+    height: 100%;
+    overflow: auto;
     background: #001529;
+    position: fixed;
+    bottom: 0;
+    left: 0;
     .logo {
       padding: 0.2rem;
       background: #1890ff;
@@ -28,20 +31,14 @@ hr {
       }
     }
   }
-  // display: flex;
   section {
     background: #f1f1f1;
     padding: 1rem;
     width: calc(100% - 240px);
-    min-height: 100%;
+    min-height: 100vh;
     position: absolute;
     top: 0;
     left: 240px;
-    // .content{
-    //   height: 100%;
-    //   background: #ffffff;
-    //   padding: 2rem;
-    // }
   }
   section.active {
     width: calc(100% - 80px);
@@ -53,8 +50,6 @@ hr {
 .ant-form.ant-advanced-search-form {
   padding: 24px 24px 0 24px;
   background: #fbfbfb;
-  // border: 1px solid #d9d9d9;
-  // border-radius: 6px;
 }
 
 .ant-advanced-search-form .ant-form-item {
@@ -65,13 +60,14 @@ hr {
   flex: 1;
 }
 
-.ant-form-explain, .ant-form-extra{
+.form-unconventional .ant-form-explain,
+.ant-form-extra {
   margin-top: 0;
 }
 
-// 数字输入框 
-.ant-input-number{
-  width: 100%
+// 数字输入框
+.ant-input-number {
+  width: 100%;
 }
 
 // 表格
@@ -93,15 +89,29 @@ table {
 
 // 弹出框
 .ant-modal-body {
-  max-height: 500px;
+  height: 500px;
   overflow: auto;
+  padding: 10px;
+}
+@media screen and (max-height: 768px) {
+  // .ant-modal-body {
+  //   max-height: 500px;
+  // }
+  .ant-modal {
+    top: 30px;
+  }
+}
+@media screen and (min-height: 768px) {
+  // .ant-modal-body {
+  //   max-height: 500px;
+  // }
 }
 
 // 滚动条样式
 ::-webkit-scrollbar {
   /*滚动条整体样式*/
-  width: 6px; /*高宽分别对应横竖滚动条的尺寸*/
-  height: 1px;
+  width: 8px; /*高宽分别对应横竖滚动条的尺寸*/
+  height: 8px;
 }
 ::-webkit-scrollbar-thumb {
   /*滚动条里面小方块*/
@@ -111,6 +121,22 @@ table {
 ::-webkit-scrollbar-track {
   /*滚动条里面轨道*/
   background: #ededed;
+}
+
+.ant-table {
+  background: #ffffff;
+}
+.ant-table-header::-webkit-scrollbar-track {
+  /*滚动条里面轨道*/
+  background: #ffffff;
+}
+.ant-table-body::-webkit-scrollbar-track {
+  /*滚动条里面轨道*/
+  background: #ffffff;
+}
+.ant-table-thead > tr > th,
+.ant-table-tbody > tr > td {
+  padding: 10px 8px;
 }
 
 // 图片上传 - 自写的控件
@@ -136,6 +162,51 @@ table {
     }
     input {
       opacity: 0;
+      width: 40px;
+    }
+  }
+}
+
+// 文件上传 - 自写的控件
+.upload-file-wrap {
+  position: relative;
+  button {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    width: 100px;
+    height: 34px;
+    line-height: 26px;
+    background: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  input {
+    opacity: 0;
+    width: 100px;
+    height: 32px;
+  }
+}
+
+// 展示型form , 由栅格系统构成
+.row-show-table {
+  padding: 0 15px;
+  .ant-row {
+    // padding: 16px 0;
+    margin-bottom: 20px;
+    border: 1px solid #e8e8e8;
+    border-bottom: none;
+    .ant-col-4 {
+      min-height: 50px;
+      line-height: 48px;
+      border-bottom: 1px solid #e8e8e8;
+      label {
+        color: rgba(0, 0, 0, 0.85);
+        font-weight: 500;
+        // display: block;
+        // text-align: right;
+      }
     }
   }
 }

@@ -11,6 +11,7 @@ class userModal extends React.Component {
         confirmLoading={this.props.confirmLoading}
         onOk={this.props.onOk}
         onCancel={this.props.onCancel}
+        maskClosable={false}
       >
         <p>rewrweree</p>
       </Modal>

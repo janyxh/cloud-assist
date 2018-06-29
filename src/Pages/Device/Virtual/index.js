@@ -1,25 +1,26 @@
 import React from "react";
 import VirtualForm from "../../../Component/Device/Virtual/Form";
-import GamesAdd from "../../../Component/AppStore/Games/Add";
-import { Table, message, Button, Popconfirm } from "antd";
-import {
-  servers,
-  serversAction,
-  addGame,
-  modifyGame,
-  deleteGame
-} from "../../../api/api";
+import OperationsTable from "../../../Component/Device/Virtual/Operation";
+import DetailTable from "../../../Component/Device/Virtual/TableDetail";
+// import Server from "../../../Component/Device/Virtual/Server";
+import { Table, message, Button, Popconfirm, Affix } from "antd";
+import { servers, serversAction, editServers } from "../../../api/api";
 import moment from "moment";
+import {
+  getDurning,
+  GetTimeOutput,
+  handleTimeout,
+  handleTableWidth
+} from "../../../Common";
 
 class Games extends React.Component {
   constructor(props) {
     super();
     this.state = {
       loading: true,
+      tableScroll: handleTableWidth(1366, 1900), // 表格宽度
       selectedRowKeys: [],
       data: [],
-      dataType: [],
-      dataClassify: [],
       searchParams: {},
       pagination: {
         pageSize: 10,
@@ -31,57 +32,58 @@ class Games extends React.Component {
       confirmLoading: false,
       isEdit: false,
       values: {},
-      imgUrl: ""
+      visibleDetail: false, // 隐藏  查看
+      serverId: "", // id  查看
+      visibleServer: false
     };
+    this.onWindowResize = this.onWindowResize.bind(this);
     this.getList = this.getList.bind(this);
-
     this.showModal = this.showModal.bind(this);
-    this.handleOk = this.handleOk.bind(this);
     this.handleCancel = this.handleCancel.bind(this);
     this.onChange = this.onChange.bind(this);
   }
 
-  confirm = id => {
-    const params = {
-      game_id: id
-    };
-    deleteGame(params)
-      .then(res => {
-        const { code } = res;
-        if (code === "00") {
-          message.success(res.message);
-          this.getList({});
-        } else {
-          message.error(res.message);
-        }
-      })
-      .catch(e => {
-        console.error(e);
-      });
-  };
   componentDidMount() {
     this.getList({});
+    window.addEventListener("resize", this.onWindowResize);
   }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.onWindowResize);
+  }
+
+  onWindowResize = () => {
+    this.setState({
+      tableScroll: handleTableWidth(1366, 1900)
+    });
+  };
 
   // ---------------------------------------------  获取列表   -------------------------------------------------
 
   // 获取列表
-  getList = params => {
+  getList = (params, fn) => {
+    handleTimeout(() => {
+      this.setState({ loading: false });
+    });
     servers(params)
       .then(res => {
-        this.setState({ loading: false });
+        this.setState({
+          loading: false,
+          data: [],
+          pagination: { total: 0, current: 1 }
+        });
         const { code } = res;
         if (code === "00") {
           if (res.data) {
-            this.setState({
-              data: res.data.list,
-              pagination: { total: res.data.total, current: res.pageNum }
-            });
-          } else {
-            this.setState({
-              data: [],
-              pagination: { total: 0, current: 1 }
-            });
+            this.setState(
+              {
+                data: res.data.list,
+                pagination: { total: res.data.total, current: res.data.pageNum }
+              },
+              () => {
+                fn && fn();
+              }
+            );
           }
         } else {
           message.error(res.message);
@@ -96,65 +98,30 @@ class Games extends React.Component {
 
   // 搜索
   handelSearch = params => {
+    this.setState({ loading: true });
+    delete this.state.searchParams.page;
     const gameParams = params;
 
     // 转换时间格式
-    if (gameParams && gameParams.created_at) {
-      gameParams.created_from =
-        moment(gameParams.created_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.created_to =
-        moment(gameParams.created_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.created_at &&
-      gameParams.created_from
-    ) {
-      gameParams.created_from = "";
-      gameParams.created_to = "";
-    }
+    getDurning(gameParams, "created_at", "created_from", "created_to");
+    getDurning(gameParams, "updated_at", "updated_from", "updated_to");
 
-    if (gameParams && gameParams.updated_at) {
-      gameParams.updated_from =
-        moment(gameParams.updated_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.updated_to =
-        moment(gameParams.updated_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.updated_at &&
-      gameParams.updated_from
-    ) {
-      gameParams.updated_from = "";
-      gameParams.updated_to = "";
-    }
-
-    delete gameParams.created_at;
-    delete gameParams.updated_at;
-
-    // 转换应用类型格式
-    const objDataType = this.state.dataType.find(item => {
-      return item.id === gameParams.app_big_type;
-    });
-    if (objDataType) {
-      gameParams.app_big_type = objDataType.appTypeName;
-    }
-
-    // 转换分类格式
-    const objClassify = this.state.dataType.find(item => {
-      return item.id === gameParams.app_small_type;
-    });
-    if (objClassify) {
-      gameParams.app_small_type = objClassify.appTypeName;
-    }
-
-    this.setState({
-      searchParams: Object.assign(this.state.searchParams, gameParams)
-    });
-
-    this.getList(this.state.searchParams);
+    this.setState(
+      {
+        searchParams: gameParams
+      },
+      () => {
+        this.getList(this.state.searchParams);
+      }
+    );
   };
 
   // 重置
   handleReset = () => {
+    this.setState({
+      searchParams: {},
+      loading: true
+    });
     this.getList({});
   };
 
@@ -166,236 +133,395 @@ class Games extends React.Component {
       pagination: {
         current: page
       },
-      searchParams: Object.assign(this.state.searchParams, { page: page })
+      searchParams: Object.assign(this.state.searchParams, { page: page }),
+      selectedRowKeys: [],
+      loading: true
     });
 
     this.getList(this.state.searchParams);
   };
 
   // ---------------------------------------------  操作   -------------------------------------------------
-  
+
+  // 选中表格
+  onSelectChange = selectedRowKeys => {
+    this.setState({ selectedRowKeys });
+  };
+
   // 重启重置
-  handleAction = (type, server_id) => {
+  handleAction = type => {
+    const hasdocumentElement =
+      document.documentElement && document.documentElement.scrollTop;
+    const top = hasdocumentElement
+      ? document.documentElement.scrollTop
+      : document.body.scrollTop;
+    // console.log("top", top);
+    // console.log(this.state.selectedRowKeys);
+    if (this.state.selectedRowKeys.length === 0) {
+      message.warning("请选择一台设备");
+      return false;
+    } else if (this.state.selectedRowKeys.length > 1) {
+      message.warning("请选择一台设备");
+      return false;
+    }
     const params = {
       type: type
     };
-    serversAction(server_id, params)
+    let paramsRest = Object.assign(
+      this.state.searchParams,
+      this.state.pagination.current
+    );
+    // console.log(this.state.searchParams);
+    // console.log(this.state.pagination.current);
+    // this.getList(paramsRest);
+    serversAction(this.state.selectedRowKeys, params)
       .then(res => {
-        console.log(res);
         const { code } = res;
         if (code === "00") {
           message.success(res.message);
+          this.getList(paramsRest, () => {
+            if (hasdocumentElement) {
+              document.documentElement.scrollTop = top;
+            } else {
+              document.body.scrollTop = top;
+            }
+          });
+          this.setState({
+            selectedRowKeys: []
+          });
         } else {
           message.error(res.message);
         }
       })
       .catch(e => {
-        console.log(e);
+        console.error(e);
       });
+    handleTimeout(() => {
+      this.setState({
+        selectedRowKeys: []
+      });
+    });
   };
 
-  // 选中表格
-  onSelectChange = (selectedRowKeys) => {
-    console.log('selectedRowKeys changed: ', selectedRowKeys);
-    this.setState({ selectedRowKeys });
-  }
-  // ---------------------------------------------  新增编辑弹出框   -------------------------------------------------
+  // 查看设备操作日志
+  handleLog = () => {
+    if (this.state.selectedRowKeys.length === 0) {
+      message.warning("请选择一台设备");
+      return false;
+    } else if (this.state.selectedRowKeys.length > 1) {
+      message.warning("请选择一台设备");
+      return false;
+    }
+    this.refs.OperationsTable.handleGetlist(this.state.selectedRowKeys[0]);
+    this.showModal();
+  };
+
+  // 解除设备锁定
+  handleUnlock = record => {
+    const params = {
+      server_status: 1
+    };
+    let paramsRest = Object.assign(
+      this.state.searchParams,
+      this.state.pagination.current
+    );
+    editServers(record.server_id, params)
+      .then(res => {
+        const { code } = res;
+        if (code === "00") {
+          message.success(res.message);
+          this.getList(paramsRest);
+        } else {
+          message.error(res.message);
+        }
+      })
+      .catch();
+  };
+
+  // ---------------------------------------------  查看设备操作日志   -------------------------------------------------
 
   // 打开弹出框
-  showModal = () => {};
-
-  // 编辑
-  handleEdit = values => {
-    this.setState({
-      isEdit: true,
-      values: Object.assign(this.state.values, values),
-      visible: true
-    });
-    const img = values.game_icon;
-    this.setState({
-      imgUrl: img
-    });
-  };
-
-  handleSetIcon = imgUrl => {
-    this.setState({ imgUrl: imgUrl });
+  showModal = () => {
+    this.setState(
+      {
+        visible: true
+      },
+      () => {
+        if (
+          document.querySelectorAll(".ant-modal-body") &&
+          document.querySelectorAll(".ant-modal-body").length > 0
+        ) {
+          setTimeout(() => {
+            document.querySelectorAll(".ant-modal-body").forEach(element => {
+              element.scrollTop = 0;
+            });
+          }, 50);
+        }
+      }
+    );
   };
 
   // 点击弹出框的确定
-  handleOk = (values, isEdit) => {
-    console.log("点击ok");
-    this.setState({
-      confirmLoading: true
-    });
-
-    const params = values;
-
-    // 转换应用类型格式
-    const objDataType = this.state.dataType.find(item => {
-      return item.id === params.app_big_type;
-    });
-    if (objDataType) {
-      params.app_big_type = objDataType.appTypeName;
-    }
-
-    if (!isEdit) {
-      addGame(params)
-        .then(res => {
-          const { code } = res;
-          if (code === "00") {
-            this.setState({
-              visible: false,
-              confirmLoading: false
-            });
-            message.success(res.message);
-            this.getList({});
-          } else {
-            message.error(res.message);
-          }
-        })
-        .catch(e => {
-          console.error(e);
-        });
-    } else {
-      params.game_id = this.state.values.game_id;
-      modifyGame(params)
-        .then(res => {
-          const { code } = res;
-          if (code === "00") {
-            this.setState({
-              visible: false,
-              confirmLoading: false
-            });
-            message.success(res.message);
-            this.getList({});
-          } else {
-            message.error(res.message);
-          }
-        })
-        .catch(e => {
-          console.error(e);
-        });
-    }
-  };
-
-  // 点击弹出框的取消
-  handleCancel = () => {
-    console.log("Clicked cancel button");
+  handleOk = () => {
     this.setState({
       visible: false
     });
   };
+
+  // 点击弹出框的取消
+  handleCancel = () => {
+    this.setState({
+      visible: false,
+      selectedRowKeys: []
+    });
+  };
+
+  // ---------------------------------------------  查看设备信息   -------------------------------------------------
+
+  // 查看设备信息
+  handleDetail = server_id => {
+    this.setState(
+      {
+        serverId: server_id,
+        visibleDetail: true
+      },
+      () => {
+        if (
+          document.querySelectorAll(".ant-modal-body") &&
+          document.querySelectorAll(".ant-modal-body").length > 0
+        ) {
+          setTimeout(() => {
+            document.querySelectorAll(".ant-modal-body").forEach(element => {
+              element.scrollTop = 0;
+            });
+          }, 50);
+        }
+      }
+    );
+    this.refs.DetailTable.getList(server_id);
+  };
+
+  // 点击弹出框的关闭
+  handleCancelDetail = () => {
+    this.setState({
+      visibleDetail: false
+    });
+  };
+
+  // ---------------------------------------------  连接云手机   -------------------------------------------------
+
+  // // 连接云手机
+  // handleConnect = server_id => {
+  //   console.log(server_id);
+  //   console.log("连接");
+  //   this.setState({
+  //     serverId: server_id,
+  //     visibleServer: true
+  //   });
+  //   this.refs.Server.handleConnect(server_id);
+  // };
+
+  // // 点击弹出框的关闭
+  // handleCancelServer = () => {
+  //   this.setState({
+  //     visibleServer: false
+  //   });
+  // };
 
   render() {
     const columns = [
       {
         title: "序号",
         key: "index",
+        // width: 80,
+        // fixed: "left",
         render: (text, record, index) => {
           return index + 1;
         }
       },
       {
-        title: "虚拟机ID",
+        title: "云手机ID",
         dataIndex: "server_id",
         key: "server_id"
+        // width: 160
+        // fixed: "left"
       },
       {
-        title: "物理机ID",
-        dataIndex: "physics_id",
-        key: "physics_id"
+        title: "云手机名字",
+        dataIndex: "server_name",
+        key: "server_name"
+        // width: 100
       },
       {
-        title: "虚拟机状态",
-        dataIndex: "server_status",
-        key: "server_status"
+        title: "云手机设备状态",
+        key: "server_status",
+        // width: 100,
+        render: (text, record) => {
+          let status = record.server_status;
+          let str;
+          if (status === 0) {
+            str = "未知状态";
+          } else if (status === 1) {
+            str = "正常运行";
+          } else if (status === 2) {
+            str = "锁定";
+          } else {
+            str = "";
+          }
+          return str;
+        }
       },
       {
-        title: "设备占用状态",
-        dataIndex: "occupy_status",
-        key: "occupy_status"
+        title: "云手机占用状态",
+        key: "occupy_status",
+        // width: 100,
+        render: (text, record) => {
+          let status = record.occupy_status;
+          let str;
+          if (status === 1) {
+            str = "未占用";
+          } else if (status === 2) {
+            str = "用户";
+          } else if (status === 3) {
+            str = "管理员";
+          } else if (status === 4) {
+            str = "管理员/用户";
+          } else if (status === 5) {
+            str = "管理员/用户";
+          } else {
+            str = "";
+          }
+          return str;
+        }
       },
       {
-        title: "视频流连接状态",
-        dataIndex: "connect_status",
-        key: "connect_status"
+        title: "云手机连接状态",
+        key: "connect_status",
+        // width: 100,
+        render: (text, record) => {
+          let status = record.connect_status;
+          let str;
+          if (status === 1) {
+            str = "未连接";
+          } else if (status === 2) {
+            str = "用户";
+          } else if (status === 3) {
+            str = "管理员";
+          } else if (status === 4) {
+            str = "管理员/用户";
+          } else if (status === 5) {
+            str = "任务连接";
+          } else {
+            str = "";
+          }
+          return str;
+        }
       },
       {
         title: "用户ID",
         dataIndex: "user_id",
         key: "user_id"
+        // width: 100
       },
       {
         title: "内网IP",
-        dataIndex: "",
-        key: ""
+        dataIndex: "local_ip",
+        key: "local_ip"
+        // width: 100
       },
       {
         title: "外网IP",
-        dataIndex: "spice_ip",
-        key: "spice_ip"
+        dataIndex: "remote_desktop_ip",
+        key: "remote_desktop_ip"
+        // width: 100
       },
       {
-        title: "外网端口",
-        dataIndex: "spice_port",
-        key: "spice_port"
+        title: "端口",
+        key: "remote_desktop_port",
+        // width: 200,
+        render: (text, record) => {
+          let str = "";
+          const arrPort = record.remote_desktop_port;
+          if (arrPort && arrPort.length > 0) {
+            if (arrPort && arrPort.length > 0) {
+              arrPort.forEach((item, index) => {
+                str !== "" ? (str += `,${item}`) : (str += item);
+              });
+            }
+          }
+          return str;
+        }
       },
       {
-        title: "分组",
-        dataIndex: "",
-        key: ""
+        title: "客户端数目",
+        dataIndex: "remote_client_count",
+        key: "remote_client_count"
+        // width: 100
+      },
+      {
+        title: "安卓版本号",
+        dataIndex: "android_version",
+        key: "android_version"
+        // width: 100
+      },
+      {
+        title: "内部版本号",
+        dataIndex: "version",
+        key: "version"
+        // width: 100
       },
       {
         title: "是否禁用",
         key: "is_forbidden",
+        // width: 80,
         render: (text, record, index) => {
           return record.is_forbidden ? "是" : "否";
         }
       },
       {
         title: "创建时间",
-        dataIndex: "created_at",
         key: "created_at",
-        width: 110
+        width: 110,
+        render: (text, record, index) => {
+          let time = GetTimeOutput(record.created_at);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
+        }
       },
       {
         title: "更新时间",
-        dataIndex: "updated_at",
         key: "updated_at",
-        width: 110
+        width: 110,
+        render: (text, record, index) => {
+          let time = GetTimeOutput(record.updated_at);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
+        }
       },
       {
         title: "操作",
         key: "action",
-        render: (text, record) => {
-          // console.log(text);
-          // console.log(record);
+        width: 110,
+        fixed: document.body.clientWidth <= 1366 ? "right" : "",
+        render: (text, record, index) => {
           return (
             <div className="action">
-              <Popconfirm
-                title="你确定要重启吗?"
-                onConfirm={this.handleAction.bind(
-                  this,
-                  "reboot",
-                  record.server_id
-                )}
-                okText="是"
-                cancelText="否"
-              >
-                <a className="danger">重启</a>
-              </Popconfirm>
-              <Popconfirm
-                title="你确定要重置吗?"
-                onConfirm={this.handleAction.bind(
-                  this,
-                  "reset",
-                  record.server_id
-                )}
-                okText="是"
-                cancelText="否"
-              >
-                <a className="danger">重置</a>
-              </Popconfirm>
+              <a onClick={this.handleDetail.bind(this, record.server_id)}>
+                查看
+              </a>
+              {/* <a onClick={this.handleConnect.bind(this, record.server_id)}>
+                连接
+              </a> */}
+              {record.server_status === 2 ? (
+                <Popconfirm
+                  title="确定要解锁吗？"
+                  okText="是"
+                  cancelText="否"
+                  onConfirm={this.handleUnlock.bind(this, record)}
+                >
+                  <a>解锁</a>
+                </Popconfirm>
+              ) : null}
             </div>
           );
         }
@@ -408,27 +534,24 @@ class Games extends React.Component {
     };
     return (
       <div>
-        <h1>虚拟机管理</h1>
+        <h1>云手机管理</h1>
         <hr />
-
-        <div className="btns-operation">
-          <Button onClick={this.showModal}>禁用</Button>
-          <Button onClick={this.showModal}>启用</Button>
-          <Button onClick={this.handleAction.bind(this, "reboot")}>
-            重启手机
-          </Button>
-          <Button onClick={this.handleAction.bind(this, "reset")}>
-            重置手机
-          </Button>
-          <Button onClick={this.showModal}>查看设备连接</Button>
-          <Button onClick={this.showModal}>查看设备操作</Button>
-          <Button onClick={this.showModal}>分组管理</Button>
-          <Button onClick={this.showModal}>变更分组</Button>
-        </div>
+        <Affix offsetTop={0}>
+          <div
+            className="btns-operation"
+            style={{ background: "#f1f1f1", width: "100%" }}
+          >
+            <Button onClick={this.handleAction.bind(this, "reboot")}>
+              重启手机
+            </Button>
+            <Button onClick={this.handleAction.bind(this, "reset")}>
+              重置手机
+            </Button>
+            <Button onClick={this.handleLog}>查看设备操作日志</Button>
+          </div>
+        </Affix>
         <VirtualForm
           params={this.state.searchParams}
-          dataType={this.state.dataType}
-          dataClassify={this.state.dataClassify}
           handelSearch={this.handelSearch}
           handleReset={this.handleReset}
         />
@@ -440,19 +563,26 @@ class Games extends React.Component {
           columns={columns}
           pagination={this.state.pagination}
           rowSelection={rowSelection}
+          scroll={this.state.tableScroll}
         />
-        <GamesAdd
+        <OperationsTable
+          ref="OperationsTable"
           visible={this.state.visible}
-          confirmLoading={this.state.confirmLoading}
-          isEdit={this.state.isEdit}
-          values={this.state.values}
-          imgUrl={this.state.imgUrl}
-          dataType={this.state.dataType}
-          dataClassify={this.state.dataClassify}
-          handleSetIcon={this.handleSetIcon}
-          handleOk={this.handleOk}
-          handleCancel={this.handleCancel}
+          selectedRowKeys={this.state.selectedRowKeys}
+          onCancel={this.handleCancel}
         />
+        <DetailTable
+          ref="DetailTable"
+          visible={this.state.visibleDetail}
+          serverId={this.state.serverId}
+          onCancel={this.handleCancelDetail}
+        />
+        {/* <Server
+          ref="Server"
+          visible={this.state.visibleServer}
+          serverId={this.state.serverId}
+          handleCancel={this.handleCancelServer}
+        /> */}
       </div>
     );
   }

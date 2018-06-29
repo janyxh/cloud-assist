@@ -11,12 +11,14 @@ import {
   deleteGame
 } from "../../../api/api";
 import moment from "moment";
+import { GetTimeOutput, getDurning, handleTableWidth } from "../../../Common";
 
 class Games extends React.Component {
   constructor(props) {
     super();
     this.state = {
       loading: true,
+      tableScroll: handleTableWidth(1366, 1500), // 表格宽度
       data: [],
       dataType: [],
       dataClassify: [],
@@ -33,6 +35,7 @@ class Games extends React.Component {
       values: {},
       imgUrl: ""
     };
+    this.onWindowResize = this.onWindowResize.bind(this);
     this.getList = this.getList.bind(this);
     this.getAppType = this.getAppType.bind(this);
     this.getClassify = this.getClassify.bind(this);
@@ -43,6 +46,7 @@ class Games extends React.Component {
   }
 
   confirm = id => {
+    delete this.state.searchParams.page;
     const params = {
       game_id: id
     };
@@ -51,7 +55,7 @@ class Games extends React.Component {
         const { code } = res;
         if (code === "00") {
           message.success(res.message);
-          this.getList({});
+          this.getList(this.state.searchParams);
         } else {
           message.error(res.message);
         }
@@ -63,7 +67,17 @@ class Games extends React.Component {
   componentDidMount() {
     this.getList({});
     this.getAppType();
+    window.addEventListener("resize", this.onWindowResize);
   }
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.onWindowResize);
+  }
+
+  onWindowResize = () => {
+    this.setState({
+      tableScroll: handleTableWidth(1366, 1500)
+    });
+  };
 
   // ---------------------------------------------  获取列表   -------------------------------------------------
 
@@ -77,7 +91,7 @@ class Games extends React.Component {
           if (res.data) {
             this.setState({
               data: res.data.list,
-              pagination: { total: res.data.total, current: res.pageNum }
+              pagination: { total: res.data.total, current: res.data.pageNum }
             });
           } else {
             this.setState({
@@ -132,39 +146,12 @@ class Games extends React.Component {
   // ---------------------------------------------  搜索   -------------------------------------------------
 
   handelSearch = params => {
+    delete this.state.searchParams.page;
     const gameParams = params;
 
     // 转换时间格式
-    if (gameParams && gameParams.created_at) {
-      gameParams.created_from =
-        moment(gameParams.created_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.created_to =
-        moment(gameParams.created_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.created_at &&
-      gameParams.created_from
-    ) {
-      gameParams.created_from = "";
-      gameParams.created_to = "";
-    }
-
-    if (gameParams && gameParams.updated_at) {
-      gameParams.updated_from =
-        moment(gameParams.updated_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.updated_to =
-        moment(gameParams.updated_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.updated_at &&
-      gameParams.updated_from
-    ) {
-      gameParams.updated_from = "";
-      gameParams.updated_to = "";
-    }
-
-    delete gameParams.created_at;
-    delete gameParams.updated_at;
+    getDurning(gameParams, "created_at", "created_from", "created_to");
+    getDurning(gameParams, "updated_at", "updated_from", "updated_to");
 
     // 转换应用类型格式
     const objDataType = this.state.dataType.find(item => {
@@ -182,12 +169,15 @@ class Games extends React.Component {
       gameParams.app_small_type = objClassify.appTypeName;
     }
 
-    this.setState({
-      searchParams: Object.assign(this.state.searchParams, gameParams),
-      loading: true
-    });
-
-    this.getList(this.state.searchParams);
+    this.setState(
+      {
+        searchParams: gameParams,
+        loading: true
+      },
+      () => {
+        this.getList(this.state.searchParams);
+      }
+    );
   };
 
   // 重置
@@ -208,7 +198,8 @@ class Games extends React.Component {
       pagination: {
         current: page
       },
-      searchParams: Object.assign(this.state.searchParams, { page: page })
+      searchParams: Object.assign(this.state.searchParams, { page: page }),
+      loading: true
     });
 
     this.getList(this.state.searchParams);
@@ -218,24 +209,50 @@ class Games extends React.Component {
 
   // 打开弹出框
   showModal = () => {
-    this.setState({
-      isEdit: false,
-      visible: true,
-      values: {},
-      imgUrl: ""
-    });
-    console.log(this.state.values);
+    this.setState(
+      {
+        isEdit: false,
+        visible: true,
+        values: {},
+        imgUrl: ""
+      },
+      () => {
+        if (
+          document.querySelectorAll(".ant-modal-body") &&
+          document.querySelectorAll(".ant-modal-body").length > 0
+        ) {
+          setTimeout(() => {
+            document.querySelectorAll(".ant-modal-body").forEach(element => {
+              element.scrollTop = 0;
+            });
+          }, 50);
+        }
+      }
+    );
   };
 
   // 编辑
   handleEdit = values => {
-    this.setState({
-      isEdit: true,
-      values: Object.assign(this.state.values, values),
-      visible: true,
-      imgUrl: values.game_icon
-    });
-    console.log(this.state.values);
+    this.setState(
+      {
+        isEdit: true,
+        values: Object.assign(this.state.values, values),
+        visible: true,
+        imgUrl: values.game_icon
+      },
+      () => {
+        if (
+          document.querySelectorAll(".ant-modal-body") &&
+          document.querySelectorAll(".ant-modal-body").length > 0
+        ) {
+          setTimeout(() => {
+            document.querySelectorAll(".ant-modal-body").forEach(element => {
+              element.scrollTop = 0;
+            });
+          }, 50);
+        }
+      }
+    );
   };
 
   handleSetIcon = imgUrl => {
@@ -243,8 +260,8 @@ class Games extends React.Component {
   };
 
   // 点击弹出框的确定
-  handleOk = (values, isEdit) => {
-    console.log("点击ok");
+  handleOk = (values, isEdit, fn) => {
+    delete this.state.searchParams.page;
     this.setState({
       confirmLoading: true
     });
@@ -269,7 +286,8 @@ class Games extends React.Component {
               confirmLoading: false
             });
             message.success(res.message);
-            this.getList({});
+            this.getList(this.state.searchParams);
+            fn && fn();
           } else {
             message.error(res.message);
             this.setState({
@@ -291,7 +309,8 @@ class Games extends React.Component {
               confirmLoading: false
             });
             message.success(res.message);
-            this.getList({});
+            this.getList(this.state.searchParams);
+            fn && fn();
           } else {
             message.error(res.message);
             this.setState({
@@ -307,7 +326,6 @@ class Games extends React.Component {
 
   // 点击弹出框的取消
   handleCancel = () => {
-    console.log("Clicked cancel button");
     this.setState({
       visible: false
     });
@@ -318,6 +336,8 @@ class Games extends React.Component {
       {
         title: "序号",
         key: "index",
+        // width: 80,
+        // fixed: "left",
         render: (text, record, index) => {
           return index + 1;
         }
@@ -326,6 +346,8 @@ class Games extends React.Component {
         title: "应用ID",
         dataIndex: "game_id",
         key: "game_id"
+        // width: 100,
+        // fixed: "left"
       },
       {
         title: "应用名称",
@@ -348,7 +370,7 @@ class Games extends React.Component {
         title: "文字描述",
         dataIndex: "description",
         key: "description",
-        width: 200
+        width: 140
       },
       {
         title: "应用类型",
@@ -371,6 +393,19 @@ class Games extends React.Component {
         key: "vendor"
       },
       {
+        title: "渠道商",
+        key: "channel_names",
+        render: (text, record, index) => {
+          let str = "";
+          if (record.channel_names && record.channel_names.length > 0) {
+            record.channel_names.forEach((item, index) => {
+              index > 0 ? (str += `，${item}`) : (str += item);
+            });
+          }
+          return str;
+        }
+      },
+      {
         title: "排序优先级",
         dataIndex: "priority",
         key: "priority"
@@ -384,22 +419,30 @@ class Games extends React.Component {
       },
       {
         title: "创建时间",
-        dataIndex: "created_at",
         key: "created_at",
-        width: 110
+        width: 110,
+        render: (text, record, index) => {
+          let time = GetTimeOutput(record.created_at);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
+        }
       },
       {
         title: "更新时间",
-        dataIndex: "updated_at",
         key: "updated_at",
-        width: 110
+        width: 110,
+        render: (text, record, index) => {
+          let time = GetTimeOutput(record.updated_at);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
+        }
       },
       {
         title: "操作",
         key: "action",
+        width: 140,
+        fixed: document.body.clientWidth <= 1366 ? "right" : "",
         render: (text, record) => {
-          // console.log(text);
-          // console.log(record);
           return (
             <div className="action">
               <a onClick={this.handleEdit.bind(this, record)}>编辑</a>
@@ -420,7 +463,6 @@ class Games extends React.Component {
       <div>
         <h1>游戏管理</h1>
         <hr />
-
         <div className="btns-operation">
           <Button onClick={this.showModal}>新增</Button>
         </div>
@@ -439,6 +481,7 @@ class Games extends React.Component {
           dataSource={this.state.data}
           columns={columns}
           pagination={this.state.pagination}
+          scroll={this.state.tableScroll}
         />
         <GamesAdd
           visible={this.state.visible}

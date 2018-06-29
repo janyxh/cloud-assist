@@ -3,6 +3,7 @@ import moment from "moment";
 import RechargeForm from "../../Component/Recharge/Form";
 import { Table, message } from "antd";
 import { queryOrder } from "../../api/api";
+import { getDurning, GetTimeOutput } from "../../Common";
 
 class Recharge extends React.Component {
   constructor(props) {
@@ -38,7 +39,7 @@ class Recharge extends React.Component {
           if (res.data) {
             this.setState({
               data: res.data.list,
-              pagination: { total: res.data.total, current: res.pageNum }
+              pagination: { total: res.data.total, current: res.data.pageNum }
             });
           } else {
             this.setState({
@@ -58,45 +59,21 @@ class Recharge extends React.Component {
   // ---------------------------------------------  搜索   -------------------------------------------------
 
   handelSearch = params => {
+    delete this.state.searchParams.page;
     const gameParams = params;
     // 转换时间格式
-    if (gameParams && gameParams.createdAt) {
-      gameParams.createStartTime =
-        moment(gameParams.createdAt[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.createEndTime =
-        moment(gameParams.createdAt[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.createdAt &&
-      gameParams.createStartTime
-    ) {
-      gameParams.createStartTime = "";
-      gameParams.createEndTime = "";
-    }
+    getDurning(gameParams, "createdAt", "createStartTime", "createEndTime");
+    getDurning(gameParams, "updatedAt", "updateStartTime", "updateEndTime");
 
-    if (gameParams && gameParams.updatedAt) {
-      gameParams.updateStartTime =
-        moment(gameParams.updatedAt[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.updateEndTime =
-        moment(gameParams.updatedAt[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.updatedAt &&
-      gameParams.updateStartTime
-    ) {
-      gameParams.updateStartTime = "";
-      gameParams.updateEndTime = "";
-    }
-
-    delete gameParams.createdAt;
-    delete gameParams.updatedAt;
-
-    this.setState({
-      searchParams: Object.assign(this.state.searchParams, gameParams),
-      loading: true
-    });
-    console.log(this.state.searchParams);
-    this.getList(this.state.searchParams);
+    this.setState(
+      {
+        searchParams: gameParams,
+        loading: true
+      },
+      () => {
+        this.getList(this.state.searchParams);
+      }
+    );
   };
 
   // 重置
@@ -116,7 +93,8 @@ class Recharge extends React.Component {
       pagination: {
         current: page
       },
-      searchParams: Object.assign(this.state.searchParams, { page: page })
+      searchParams: Object.assign(this.state.searchParams, { page: page }),
+      loading: true
     });
 
     this.getList(this.state.searchParams);
@@ -137,15 +115,23 @@ class Recharge extends React.Component {
         key: "id"
       },
       {
-        title: "挂机点",
+        title: "商品类型",
         dataIndex: "name",
         key: "name"
+      },
+      {
+        title: "商品规格",
+        dataIndex: "amount",
+        key: "amount"
       },
       {
         title: "金额（元）",
         dataIndex: "price",
         key: "price",
-        width: 200
+        width: 200,
+        render: (text, record) => {
+          return record.price / 100;
+        }
       },
       {
         title: "支付渠道",
@@ -164,8 +150,9 @@ class Recharge extends React.Component {
         title: "订单状态",
         key: "status",
         render: (text, record) => {
-          let status;
-          if (record.status === 1) {
+          let status;if (record.status === 0) {
+            status = "未付款";
+          } else if (record.status === 1) {
             status = "已付款";
           } else if (record.status === 2) {
             status = "已完成";
@@ -183,7 +170,9 @@ class Recharge extends React.Component {
         key: "createdAt",
         width: 110,
         render: (text, record, index) => {
-          return moment(record.createdAt).format("YYYY-MM-DD hh:mm:ss");
+          let time = GetTimeOutput(record.createdAt);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
         }
       },
       {
@@ -191,7 +180,9 @@ class Recharge extends React.Component {
         key: "updatedAt",
         width: 110,
         render: (text, record, index) => {
-          return moment(record.updatedAt).format("YYYY-MM-DD hh:mm:ss");
+          let time = GetTimeOutput(record.updatedAt);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
         }
       }
     ];

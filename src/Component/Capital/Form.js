@@ -1,4 +1,5 @@
 import React from "react";
+import { disabledDate } from "../../Common";
 import { Form, Row, Col, Input, Button, Select, DatePicker } from "antd";
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -9,6 +10,9 @@ class GamesSearchForm extends React.Component {
   handleSearch = e => {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
+      if (err) {
+        return;
+      }
       this.props.handelSearch(values);
     });
   };
@@ -19,6 +23,24 @@ class GamesSearchForm extends React.Component {
     this.props.handleReset();
   };
 
+  // 验证用户ID
+  // IdValidate = (rule, value, callback) => {
+  //   if (value !== "" && value && !Number.isInteger(Number(value))) {
+  //     callback(new Error("请输入整数"));
+  //   } else {
+  //     callback();
+  //   }
+  // };
+
+  // 验证申请资金
+  capitalValidate = (rule, value, callback) => {
+    if (value !== "" && value && isNaN(Number(value))) {
+      callback(new Error("请输入数字"));
+    } else {
+      callback();
+    }
+  };
+
   render() {
     const { getFieldDecorator } = this.props.form;
     return (
@@ -26,13 +48,24 @@ class GamesSearchForm extends React.Component {
         <Row gutter={24}>
           <Col span={4}>
             <FormItem label="平台订单号">
-              {getFieldDecorator(`orderId`, {
+              {getFieldDecorator(`thirdPlatformId`, {
                 rules: [
                   {
                     required: false
                   }
                 ]
               })(<Input placeholder="请输入平台订单号" />)}
+            </FormItem>
+          </Col>
+          <Col span={4}>
+            <FormItem label="流水号">
+              {getFieldDecorator(`orderId`, {
+                rules: [
+                  {
+                    required: false
+                  }
+                ]
+              })(<Input placeholder="请输入流水号" />)}
             </FormItem>
           </Col>
           <Col span={4}>
@@ -43,7 +76,7 @@ class GamesSearchForm extends React.Component {
                     required: false
                   }
                 ]
-              })(<Input type="number" placeholder="请输入用户ID" />)}
+              })(<Input maxLength="11" placeholder="请输入用户ID" />)}
             </FormItem>
           </Col>
           <Col span={4}>
@@ -52,9 +85,10 @@ class GamesSearchForm extends React.Component {
                 rules: [
                   {
                     required: false
-                  }
+                  },
+                  { validator: this.capitalValidate }
                 ]
-              })(<Input type="number" placeholder="请输入申请资金" />)}
+              })(<Input maxLength="9" placeholder="请输入申请资金" />)}
             </FormItem>
           </Col>
           <Col span={4}>
@@ -107,13 +141,14 @@ class GamesSearchForm extends React.Component {
                   <Option value={3}>提现</Option>
                   <Option value={4}>账户加钱</Option>
                   <Option value={5}>账户减钱</Option>
+                  <Option value={6}>支付</Option>
                 </Select>
               )}
             </FormItem>
           </Col>
           <Col span={4}>
             <FormItem label="交易类型">
-              {getFieldDecorator(`paymentMode`, {
+              {getFieldDecorator(`exchangeType`, {
                 rules: [
                   {
                     required: false,
@@ -156,6 +191,7 @@ class GamesSearchForm extends React.Component {
                 ]
               })(
                 <Select placeholder="请选择提交状态">
+                <Option value={0}>待提交 </Option>
                   <Option value={1}>已提交 </Option>
                 </Select>
               )}
@@ -170,22 +206,26 @@ class GamesSearchForm extends React.Component {
                     message: "Input something!"
                   }
                 ]
-              })(<RangePicker format="YYYY-MM-DD" />)}
+              })(
+                <RangePicker format="YYYY-MM-DD" disabledDate={disabledDate} />
+              )}
             </FormItem>
           </Col>
           <Col span={6}>
             <FormItem label="结束时间">
-              {getFieldDecorator(`update_at`, {
+              {getFieldDecorator(`updated_at`, {
                 rules: [
                   {
                     required: false,
                     message: "Input something!"
                   }
                 ]
-              })(<RangePicker format="YYYY-MM-DD" />)}
+              })(
+                <RangePicker format="YYYY-MM-DD" disabledDate={disabledDate} />
+              )}
             </FormItem>
           </Col>
-          <Col span={4}>
+          <Col span={6}>
             <FormItem>
               <Button type="primary" htmlType="submit" icon="search">
                 搜索

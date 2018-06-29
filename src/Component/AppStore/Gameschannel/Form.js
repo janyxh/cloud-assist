@@ -1,5 +1,5 @@
 import React from "react";
-// import "./user.css";
+import { disabledDate } from "../../../Common";
 import { Form, Row, Col, Input, Button, Select, DatePicker } from "antd";
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -10,6 +10,9 @@ class GamesSearchForm extends React.Component {
   handleSearch = e => {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
+      if (err) {
+        return;
+      }
       this.props.handelSearch(values);
     });
   };
@@ -18,6 +21,24 @@ class GamesSearchForm extends React.Component {
   handleReset = () => {
     this.props.form.resetFields();
     this.props.handleReset();
+  };
+
+  // 验证应用ID
+  gameIdValidate = (rule, value, callback) => {
+    if (value !== "" && value && !Number.isInteger(Number(value))) {
+      callback(new Error("请输入整数"));
+    } else {
+      callback();
+    }
+  };
+
+  // 验证APP ID
+  appIdValidate = (rule, value, callback) => {
+    if (value !== "" && value && !Number.isInteger(Number(value))) {
+      callback(new Error("请输入整数"));
+    } else {
+      callback();
+    }
   };
 
   render() {
@@ -31,9 +52,10 @@ class GamesSearchForm extends React.Component {
                 rules: [
                   {
                     required: false
-                  }
+                  },
+                  { validator: this.appIdValidate }
                 ]
-              })(<Input type="number" placeholder="请输入APPID" />)}
+              })(<Input maxLength="11" placeholder="请输入APPID" />)}
             </FormItem>
           </Col>
           <Col span={4}>
@@ -42,9 +64,10 @@ class GamesSearchForm extends React.Component {
                 rules: [
                   {
                     required: false
-                  }
+                  },
+                  { validator: this.gameIdValidate }
                 ]
-              })(<Input type="number" placeholder="请输入应用ID" />)}
+              })(<Input maxLength="11" placeholder="请输入应用ID" />)}
             </FormItem>
           </Col>
           <Col span={4}>
@@ -56,6 +79,33 @@ class GamesSearchForm extends React.Component {
                   }
                 ]
               })(<Input placeholder="请输入应用名称" />)}
+            </FormItem>
+          </Col>
+          <Col span={4}>
+            <FormItem label="渠道商">
+              {getFieldDecorator(`channel_name`, {
+                rules: [
+                  {
+                    required: false
+                  }
+                ]
+              })(<Input placeholder="请输入渠道商" />)}
+            </FormItem>
+          </Col>
+          <Col span={4}>
+            <FormItem label="ROOT权限">
+              {getFieldDecorator(`is_root`, {
+                rules: [
+                  {
+                    required: false
+                  }
+                ]
+              })(
+                <Select placeholder="请选择ROOT权限">
+                  <Option value={1}>是</Option>
+                  <Option value={0}>否</Option>
+                </Select>
+              )}
             </FormItem>
           </Col>
           <Col span={4}>
@@ -83,11 +133,13 @@ class GamesSearchForm extends React.Component {
                   placeholder="请选择应用类型"
                   onChange={this.props.onChangeDataType}
                 >
-                  {this.props.dataType.map(item => (
-                    <Option value={item.id} key={item.id}>
-                      {item.appTypeName}
-                    </Option>
-                  ))}
+                  {this.props.dataType && this.props.dataType.length > 0
+                    ? this.props.dataType.map(item => (
+                        <Option value={item.id} key={item.id}>
+                          {item.appTypeName}
+                        </Option>
+                      ))
+                    : null}
                 </Select>
               )}
             </FormItem>
@@ -103,11 +155,30 @@ class GamesSearchForm extends React.Component {
                 ]
               })(
                 <Select placeholder="请选择分类">
-                  {this.props.dataClassify.map(item => (
-                    <Option value={item.appTypeName} key={item.id}>
-                      {item.appTypeName}
-                    </Option>
-                  ))}
+                  {this.props.dataClassify && this.props.dataClassify.length > 0
+                    ? this.props.dataClassify.map(item => (
+                        <Option value={item.appTypeName} key={item.id}>
+                          {item.appTypeName}
+                        </Option>
+                      ))
+                    : null}
+                </Select>
+              )}
+            </FormItem>
+          </Col>
+          <Col span={4}>
+            <FormItem label="上架状态">
+              {getFieldDecorator(`shelf_status`, {
+                rules: [
+                  {
+                    required: false,
+                    message: "Input something!"
+                  }
+                ]
+              })(
+                <Select placeholder="请选择上架状态">
+                  <Option value={1}>上架</Option>
+                  <Option value={0}>下架</Option>
                 </Select>
               )}
             </FormItem>
@@ -138,7 +209,9 @@ class GamesSearchForm extends React.Component {
                     message: "Input something!"
                   }
                 ]
-              })(<RangePicker format="YYYY-MM-DD" />)}
+              })(
+                <RangePicker format="YYYY-MM-DD" disabledDate={disabledDate} />
+              )}
             </FormItem>
           </Col>
           <Col span={6}>
@@ -150,10 +223,12 @@ class GamesSearchForm extends React.Component {
                     message: "Input something!"
                   }
                 ]
-              })(<RangePicker format="YYYY-MM-DD" />)}
+              })(
+                <RangePicker format="YYYY-MM-DD" disabledDate={disabledDate} />
+              )}
             </FormItem>
           </Col>
-          <Col span={4}>
+          <Col span={6}>
             <FormItem>
               <Button type="primary" htmlType="submit" icon="search">
                 搜索

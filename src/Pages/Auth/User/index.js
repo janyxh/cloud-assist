@@ -49,8 +49,6 @@ const columns = [
   //   title: "操作",
   //   key: "isDeleted",
   //   render: (text, record) => {
-  //     // console.log(text);
-  //     // console.log(record);
   //     const { isDeleted } = record;
   //     return (
   //       <div className="action">
@@ -122,7 +120,7 @@ class User extends React.Component {
           // data = res.data;
           this.setState({
             data: res.data.list,
-            pagination: { total: res.data.total, current: res.pageNum }
+            pagination: { total: res.data.total, current: res.data.pageNum }
           });
         } else {
           message.error(res.message);
@@ -135,14 +133,20 @@ class User extends React.Component {
 
   // 搜索
   handelSearch = params => {
+    delete this.state.searchParams.page;
     this.setState({
-      searchParams: params
+      searchParams: params,
+      loading: true
     });
     this.getList(params);
   };
 
   // 重置
   handleReset = () => {
+    this.setState({
+      searchParams: {},
+      loading: true
+    });
     this.getList({});
   };
 
@@ -152,7 +156,8 @@ class User extends React.Component {
       pagination: {
         current: page
       },
-      searchParams: Object.assign(this.state.searchParams, { page: page })
+      searchParams: Object.assign(this.state.searchParams, { page: page }),
+      loading: true
     });
 
     this.getList(this.state.searchParams);
@@ -167,7 +172,6 @@ class User extends React.Component {
 
   // 点击弹出框的确定
   handleOk = () => {
-    console.log("点击ok");
     this.setState({
       confirmLoading: true
     });
@@ -181,7 +185,6 @@ class User extends React.Component {
 
   // 点击弹出框的取消
   handleCancel = () => {
-    console.log("Clicked cancel button");
     this.setState({
       visible: false
     });

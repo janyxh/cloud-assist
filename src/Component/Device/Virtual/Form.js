@@ -1,5 +1,5 @@
 import React from "react";
-// import "./user.css";
+import { disabledDate } from "../../../Common";
 import { Form, Row, Col, Input, Button, Select, DatePicker } from "antd";
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -10,6 +10,9 @@ class GamesSearchForm extends React.Component {
   handleSearch = e => {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
+      if (err) {
+        return;
+      }
       this.props.handelSearch(values);
     });
   };
@@ -26,14 +29,25 @@ class GamesSearchForm extends React.Component {
       <Form className="ant-advanced-search-form" onSubmit={this.handleSearch}>
         <Row gutter={24}>
           <Col span={4}>
-            <FormItem label="虚拟机名称">
+            <FormItem label="云手机ID">
+              {getFieldDecorator(`server_id`, {
+                rules: [
+                  {
+                    required: false
+                  }
+                ]
+              })(<Input placeholder="请输入云手机ID" />)}
+            </FormItem>
+          </Col>
+          <Col span={4}>
+            <FormItem label="云手机名称">
               {getFieldDecorator(`server_name`, {
                 rules: [
                   {
                     required: false
                   }
                 ]
-              })(<Input placeholder="请输入虚拟机名称" />)}
+              })(<Input placeholder="请输入云手机名称" />)}
             </FormItem>
           </Col>
           <Col span={4}>
@@ -47,11 +61,29 @@ class GamesSearchForm extends React.Component {
                 ]
               })(
                 <Select placeholder="请选择设备状态">
-                  {/* {this.props.dataType.map(item => (
-                    <Option value={item.id} key={item.id}>
-                      {item.appTypeName}
-                    </Option>
-                  ))} */}
+                  <Option value={0}>未知状态</Option>
+                  <Option value={1}>正常运行</Option>
+                  <Option value={2}>锁定</Option>
+                </Select>
+              )}
+            </FormItem>
+          </Col>
+          <Col span={4}>
+            <FormItem label="占用状态">
+              {getFieldDecorator(`occupy_status`, {
+                rules: [
+                  {
+                    required: false,
+                    message: "Input something!"
+                  }
+                ]
+              })(
+                <Select placeholder="请选择占用状态">
+                  <Option value={1}>未占用</Option>
+                  <Option value={2}>用户</Option>
+                  <Option value={3}>管理员</Option>
+                  <Option value={4}>管理员/用户</Option>
+                  <Option value={5}>任务占用</Option>
                 </Select>
               )}
             </FormItem>
@@ -67,11 +99,11 @@ class GamesSearchForm extends React.Component {
                 ]
               })(
                 <Select placeholder="请选择连接状态">
-                  {/* {this.props.dataType.map(item => (
-                    <Option value={item.id} key={item.id}>
-                      {item.appTypeName}
-                    </Option>
-                  ))} */}
+                  <Option value={1}>未占用</Option>
+                  <Option value={2}>用户</Option>
+                  <Option value={3}>管理员</Option>
+                  <Option value={4}>管理员/用户</Option>
+                  <Option value={5}>任务占用</Option>
                 </Select>
               )}
             </FormItem>
@@ -102,10 +134,12 @@ class GamesSearchForm extends React.Component {
                     message: "Input something!"
                   }
                 ]
-              })(<RangePicker format="YYYY-MM-DD" />)}
+              })(
+                <RangePicker format="YYYY-MM-DD" disabledDate={disabledDate} />
+              )}
             </FormItem>
           </Col>
-          <Col span={6}>
+          <Col span={8}>
             <FormItem label="更新时间">
               {getFieldDecorator(`updated_at`, {
                 rules: [
@@ -114,10 +148,12 @@ class GamesSearchForm extends React.Component {
                     message: "Input something!"
                   }
                 ]
-              })(<RangePicker format="YYYY-MM-DD" />)}
+              })(
+                <RangePicker format="YYYY-MM-DD" disabledDate={disabledDate} />
+              )}
             </FormItem>
           </Col>
-          <Col span={4}>
+          <Col span={6}>
             <FormItem>
               <Button type="primary" htmlType="submit" icon="search">
                 搜索

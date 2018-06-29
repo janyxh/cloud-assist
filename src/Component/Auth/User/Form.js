@@ -7,6 +7,9 @@ class AdvancedSearchForm extends React.Component {
   handleSearch = e => {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
+      if (err) {
+        return;
+      }
       this.props.handelSearch(values);
     });
   };
@@ -15,6 +18,16 @@ class AdvancedSearchForm extends React.Component {
     this.props.form.resetFields();
     this.props.handleReset();
   };
+
+  // 验证手机号
+  phoneValidate = (rule, value, callback) => {
+    if (value !== "" && value && !Number.isInteger(Number(value))) {
+      callback(new Error("请输入整数"));
+    } else {
+      callback();
+    }
+  };
+  
 
   render() {
     const { getFieldDecorator } = this.props.form;
@@ -63,12 +76,13 @@ class AdvancedSearchForm extends React.Component {
                   {
                     required: false,
                     message: "Input something!"
-                  }
+                  },
+                  { validator: this.phoneValidate }
                 ]
-              })(<Input type="number" maxLength="11" placeholder="请输入手机号码" />)}
+              })(<Input maxLength="11" placeholder="请输入手机号码" />)}
             </FormItem>
           </Col>
-          <Col span={4}>
+          <Col span={6}>
             <FormItem>
               <Button type="primary" htmlType="submit" icon="search">
                 搜索

@@ -1,17 +1,31 @@
 import React from "react";
-import { Modal, Form, Input, Select, InputNumber } from "antd";
+import { Modal, Form, Input, Select } from "antd";
 const FormItem = Form.Item;
 const Option = Select.Option;
 
 const CollectionCreateForm = Form.create()(
   class extends React.Component {
-    constructor(props) {
-      super();
-      this.state = {
-        loading: false,
-        version: ""
-      };
-    }
+    // 验证商品规格
+    amountValidate = (rule, value, callback) => {
+      if (value !== "" && value && !Number.isInteger(Number(value))) {
+        callback(new Error("请输入整数"));
+      } else {
+        const price = Number(this.props.form.getFieldValue("price"));
+        this.props.handleSetUnivalent(price, Number(value));
+        callback();
+      }
+    };
+
+    // 验证商品价格
+    priceValidate = (rule, value, callback) => {
+      if (value !== "" && value && !Number.isInteger(Number(value))) {
+        callback(new Error("请输入整数"));
+      } else {
+        const amount = Number(this.props.form.getFieldValue("amount"));
+        this.props.handleSetUnivalent(Number(value), amount);
+        callback();
+      }
+    };
 
     render() {
       const {
@@ -23,8 +37,6 @@ const CollectionCreateForm = Form.create()(
         onCreate,
         form
       } = this.props;
-
-      // console.log(values);
 
       const { getFieldDecorator } = form;
       const formItemLayout = {
@@ -44,6 +56,7 @@ const CollectionCreateForm = Form.create()(
           onCancel={onCancel}
           onOk={onCreate}
           confirmLoading={confirmLoading}
+          maskClosable={false}
         >
           <Form>
             <FormItem {...formItemLayout} label="商品名称">
@@ -53,6 +66,14 @@ const CollectionCreateForm = Form.create()(
                   {
                     required: true,
                     message: "请输入商品名称"
+                  },
+                  {
+                    max: 20,
+                    message: "不能超过20个字"
+                  },
+                  {
+                    whitespace: true,
+                    message: "输入内容不能是纯空格"
                   }
                 ]
               })(<Input placeholder="请输入商品名称" />)}
@@ -63,25 +84,83 @@ const CollectionCreateForm = Form.create()(
                 rules: [
                   {
                     required: true,
-                    message: "请输入商品类型"
+                    message: "请选择商品类型"
                   }
                 ]
               })(
-                <Select placeholder="请输入商品类型">
+                <Select placeholder="请选择商品类型">
                   <Option value={2}>挂机点</Option>
                 </Select>
               )}
             </FormItem>
             <FormItem {...formItemLayout} label="商品规格">
               {getFieldDecorator("amount", {
-                initialValue: values.amount,
+                initialValue: values.amount
+                  ? values.amount.toString()
+                  : undefined,
                 rules: [
                   {
                     required: true,
                     message: "请输入商品规格"
+                  },
+                  { validator: this.amountValidate },
+                  {
+                    max: 20,
+                    message: "不能超过20个字"
+                  },
+                  {
+                    whitespace: true,
+                    message: "输入内容不能是纯空格"
                   }
                 ]
-              })(<InputNumber placeholder="请输入商品规格" />)}
+              })(<Input maxLength="9" placeholder="请输入商品规格" />)}
+            </FormItem>
+            <FormItem {...formItemLayout} label="商品价格(元)">
+              {getFieldDecorator("price", {
+                initialValue: values.price
+                  ? (Number(values.price) / 100).toString()
+                  : undefined,
+                rules: [
+                  {
+                    required: true,
+                    message: "请输入商品价格"
+                  },
+                  { validator: this.priceValidate },
+                  {
+                    max: 20,
+                    message: "不能超过20个字"
+                  },
+                  {
+                    whitespace: true,
+                    message: "输入内容不能是纯空格"
+                  }
+                ]
+              })(<Input maxLength="9" placeholder="请输入商品价格" />)}
+            </FormItem>
+            <FormItem {...formItemLayout} label="单价(元/点)">
+              {getFieldDecorator("univalent", {
+                initialValue:
+                  (this.props.univalent && this.props.univalent.toFixed(2)) ||
+                  (Number(values.price) / Number(values.amount) / 100 &&
+                    (
+                      Number(values.price) /
+                      Number(values.amount) /
+                      100
+                    ).toFixed(2)) ||
+                  undefined,
+                rules: [
+                  {
+                    required: true,
+                    message: "请输入单价"
+                  }
+                ]
+              })(
+                <Input
+                  maxLength="9"
+                  placeholder="请输入单价，由价格和规格计算生成"
+                  disabled
+                />
+              )}
             </FormItem>
             <FormItem {...formItemLayout} label="文字描述">
               {getFieldDecorator("description", {
@@ -90,21 +169,17 @@ const CollectionCreateForm = Form.create()(
                   {
                     required: true,
                     message: "请输入文字描述"
+                  },
+                  {
+                    max: 30,
+                    message: "不能超过30个字"
+                  },
+                  {
+                    whitespace: true,
+                    message: "输入内容不能是纯空格"
                   }
                 ]
               })(<Input placeholder="请输入文字描述" />)}
-            </FormItem>
-            <FormItem {...formItemLayout} label="商品价格(元)">
-              {getFieldDecorator("price", {
-                initialValue: values.price,
-                rules: [
-                  {
-                    required: true,
-                    message: "请输入商品价格"
-                  }
-                ]
-                // })(<Input type="number" placeholder="请输入商品价格" />)}
-              })(<InputNumber placeholder="请输入商品价格" />)}
             </FormItem>
             <FormItem {...formItemLayout} label="活动">
               {getFieldDecorator("promotion", {
@@ -195,27 +270,46 @@ const CollectionCreateForm = Form.create()(
 );
 
 class CollectionsPage extends React.Component {
+  state = {
+    univalent: undefined
+  };
   handleCreate = isEdit => {
     const form = this.formRef.props.form;
     form.validateFields((err, values) => {
-      console.log("Received values of form: ", values);
       if (err) {
         return;
       }
-
-      console.log("Received values of form: ", values);
+      values.description = values.description.trim();
+      values.name = values.name.trim();
+      values.amount = Number(values.amount);
+      values.price = Number(values.price) * 100;
+      // console.log("Received values of form: ", values);
 
       form.resetFields();
-      this.props.handleOk(values, isEdit);
+      this.setState({
+        univalent: undefined
+      });
+      this.props.handleOk(values, isEdit, () => {
+        form.resetFields();
+      });
     });
   };
   handleCancel = () => {
     const form = this.formRef.props.form;
     form.resetFields();
+    this.setState({
+      univalent: undefined
+    });
     this.props.handleCancel();
   };
   saveFormRef = formRef => {
     this.formRef = formRef;
+  };
+
+  handleSetUnivalent = (price, amount) => {
+    this.setState({
+      univalent: price / amount
+    });
   };
   render() {
     return (
@@ -225,22 +319,10 @@ class CollectionsPage extends React.Component {
         confirmLoading={this.props.confirmLoading}
         isEdit={this.props.isEdit}
         values={this.props.values}
-        scriptOptions={this.props.scriptOptions}
-        option={this.props.option}
-        scriptUrl={this.props.scriptUrl}
-        dataType={this.props.dataType}
-        dataClassify={this.props.dataClassify}
-        gameList={this.props.gameList}
-        onChangeDataType={this.props.onChangeDataType}
-        handleSetScript={this.props.handleSetScript}
-        handleUploadLoading={this.props.handleUploadLoading}
-        loadingUploadScript={this.props.loadingUploadScript}
+        univalent={this.state.univalent}
+        handleSetUnivalent={this.handleSetUnivalent}
         onCancel={this.handleCancel}
         onCreate={this.handleCreate.bind(this, this.props.isEdit)}
-        handleAdd={this.props.handleAdd}
-        handleMinus={this.props.handleMinus}
-        handleAddOption={this.props.handleAddOption}
-        handleMinusOption={this.props.handleMinusOption}
       />
     );
   }

@@ -11,6 +11,7 @@ class Nav extends React.Component {
     this.state = {
       data: []
     };
+    this.handlePath = this.handlePath.bind(this);
   }
   // state = {
   //   collapsed: false
@@ -24,18 +25,56 @@ class Nav extends React.Component {
     const regParams = {};
     getMenu(regParams)
       .then(res => {
-        this.setState({
-          data: res
-        });
+        this.setState(
+          {
+            data: res
+          },
+          () => {
+            this.handlePath(res);
+          }
+        );
       })
       .catch(error => {
         console.error(error);
       });
   };
-  componentDidMount() {
+  componentWillMount() {
     this.getDate();
   }
+
+  handleClick = ({ item, key, keyPath }) => {
+    sessionStorage.setItem("SelectedKeys", key);
+    keyPath[1]
+      ? sessionStorage.setItem("OpenKeys", keyPath[1])
+      : sessionStorage.setItem("OpenKeys", "");
+  };
+
+  // 查询路径
+  handlePath = data => {
+    let path = window.location.pathname;
+    for (let i = 0; i < data.length; i++) {
+      let sub = data[i].sub;
+      if (data[i].path === path) {
+        this.setState({
+          defaultSelectedKeys: `key${i}`
+        });
+        break;
+      } else if (sub) {
+        for (let j = 0; j < sub.length; j++) {
+          if (sub[j].path === path) {
+            this.setState({
+              defaultSelectedKeys: `key${i}${j}`,
+              defaultOpenKeys: `sub${i}`
+            });
+            break;
+          }
+        }
+      }
+    }
+  };
   render() {
+    const SelectedKeys = sessionStorage.getItem("SelectedKeys");
+    const OpenKeys = sessionStorage.getItem("OpenKeys");
     return (
       <div>
         {/* <Button
@@ -46,39 +85,46 @@ class Nav extends React.Component {
           <Icon type={this.state.collapsed ? "menu-unfold" : "menu-fold"} />
         </Button> */}
         <Menu
-          defaultSelectedKeys={["1"]}
-          defaultOpenKeys={["sub1"]}
+          defaultSelectedKeys={[SelectedKeys]}
+          defaultOpenKeys={[OpenKeys]}
           mode="inline"
           theme="dark"
           // inlineCollapsed={this.state.collapsed}
+          onClick={this.handleClick}
         >
-          {this.state.data.map(
-            (item, index) =>
-              item.single ? (
-                <Menu.Item key={index}>
-                  <Link to={item.path}>
-                    <Icon type={item.icon} />
-                    <span>{item.name}</span>
-                  </Link>}
-                </Menu.Item>
-              ) : (
-                <SubMenu
-                  key={index}
-                  title={
-                    <span>
-                      <Icon type={item.icon} />
-                      <span>{item.name}</span>
-                    </span>
-                  }
-                >
-                  {item.sub.map((item, subIndex) => (
-                    <Menu.Item key={index.toString() + subIndex}>
-                      <Link to={item.path}>{item.name}</Link>
+          {this.state.data && this.state.data.length > 0
+            ? this.state.data.map(
+                (item, index) =>
+                  item.single ? (
+                    <Menu.Item key={`key${index}`}>
+                      <Link to={item.path}>
+                        <Icon type={item.icon} />
+                        <span>{item.name}</span>
+                      </Link>}
                     </Menu.Item>
-                  ))}
-                </SubMenu>
+                  ) : (
+                    <SubMenu
+                      key={`sub${index}`}
+                      title={
+                        <span>
+                          <Icon type={item.icon} />
+                          <span>{item.name}</span>
+                        </span>
+                      }
+                    >
+                      {item.sub && item.sub.length > 0
+                        ? item.sub.map((item, subIndex) => (
+                            <Menu.Item
+                              key={`key${index.toString() + subIndex}`}
+                            >
+                              <Link to={item.path}>{item.name}</Link>
+                            </Menu.Item>
+                          ))
+                        : null}
+                    </SubMenu>
+                  )
               )
-          )}
+            : null}
         </Menu>
       </div>
     );

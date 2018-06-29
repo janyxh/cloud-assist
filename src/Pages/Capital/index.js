@@ -3,6 +3,7 @@ import moment from "moment";
 import CapitalForm from "../../Component/Capital/Form";
 import { Table, message } from "antd";
 import { queryFunds } from "../../api/api";
+import { getDurning, GetTimeOutput } from "../../Common";
 
 class Capital extends React.Component {
   constructor(props) {
@@ -38,7 +39,7 @@ class Capital extends React.Component {
           if (res.data) {
             this.setState({
               data: res.data.list,
-              pagination: { total: res.total, current: res.page_index }
+              pagination: { total: res.data.total, current: res.data.pageNum }
             });
           } else {
             this.setState({
@@ -58,45 +59,26 @@ class Capital extends React.Component {
   // ---------------------------------------------  搜索   -------------------------------------------------
 
   handelSearch = params => {
+    delete this.state.searchParams.page;
     const gameParams = params;
+
+    if (gameParams.funds) {
+      gameParams.funds = Number(gameParams.funds) * 100;
+    }
+
     // 转换时间格式
-    if (gameParams && gameParams.created_at) {
-      gameParams.createdAtStart =
-        moment(gameParams.created_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.createdAtEnd =
-        moment(gameParams.created_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.created_at &&
-      gameParams.createdAtStart
-    ) {
-      gameParams.createdAtStart = "";
-      gameParams.createdAtEnd = "";
-    }
+    getDurning(gameParams, "created_at", "createdAtStart", "createdAtEnd");
+    getDurning(gameParams, "updated_at", "updatedAtStart", "updatedAtEnd");
 
-    if (gameParams && gameParams.update_at) {
-      gameParams.updatedAtStart =
-        moment(gameParams.update_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.updatedAtEnd =
-        moment(gameParams.update_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.update_at &&
-      gameParams.updatedAtStart
-    ) {
-      gameParams.updatedAtStart = "";
-      gameParams.updatedAtEnd = "";
-    }
-
-    delete gameParams.created_at;
-    delete gameParams.update_at;
-
-    this.setState({
-      searchParams: Object.assign(this.state.searchParams, gameParams),
-      loading: true
-    });
-    console.log(this.state.searchParams);
-    this.getList(this.state.searchParams);
+    this.setState(
+      {
+        searchParams: gameParams,
+        loading: true
+      },
+      () => {
+        this.getList(this.state.searchParams);
+      }
+    );
   };
 
   // 重置
@@ -116,7 +98,8 @@ class Capital extends React.Component {
       pagination: {
         current: page
       },
-      searchParams: Object.assign(this.state.searchParams, { page: page })
+      searchParams: Object.assign(this.state.searchParams, { page: page }),
+      loading: true
     });
 
     this.getList(this.state.searchParams);
@@ -127,17 +110,23 @@ class Capital extends React.Component {
       {
         title: "序号",
         key: "index",
+        width: 50,
         render: (text, record, index) => {
           return index + 1;
         }
       },
-      {
-        title: "流水号",
-        dataIndex: "id",
-        key: "id"
-      },
+      // {
+      //   title: "id",
+      //   dataIndex: "id",
+      //   key: "id"
+      // },
       {
         title: "支付平台订单号",
+        dataIndex: "thirdPlatformId",
+        key: "thirdPlatformId"
+      },
+      {
+        title: "流水号",
         dataIndex: "orderId",
         key: "orderId"
       },
@@ -147,9 +136,12 @@ class Capital extends React.Component {
         key: "userId"
       },
       {
-        title: "申请资金(分)",
+        title: "申请资金(元)",
         dataIndex: "funds",
-        key: "funds"
+        key: "funds",
+        render: (text, record) => {
+          return (record.funds / 100).toFixed(2);
+        }
       },
       {
         title: "结算状态",
@@ -159,9 +151,17 @@ class Capital extends React.Component {
         }
       },
       {
-        title: "余额",
-        dataIndex: "balance",
-        key: "balance"
+        title: "支付渠道",
+        key: "paymentMode",
+        render: (text, record) => {
+          let value;
+          if (record.paymentMode === 1) {
+            value = "支付宝";
+          } else if (record.paymentMode === 2) {
+            value = "微信";
+          }
+          return value;
+        }
       },
       {
         title: "资金类型",
@@ -178,6 +178,8 @@ class Capital extends React.Component {
             value = "账户加钱";
           } else if (record.fundsType === 5) {
             value = "账户减钱";
+          } else if (record.fundsType === 6) {
+            value = "支付";
           }
           return value;
         }
@@ -210,24 +212,30 @@ class Capital extends React.Component {
           let value;
           if (record.submitStatus === 1) {
             value = "已提交";
-          } 
+          } else if (record.submitStatus === 0) {
+            value = "待提交";
+          }
           return value;
         }
       },
       {
         title: "创建时间",
         key: "createdAt",
-        width: 110,
+        // width: 110,
         render: (text, record, index) => {
-          return moment(record.createdAt).format("YYYY-MM-DD hh:mm:ss");
+          let time = GetTimeOutput(record.createdAt);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
         }
       },
       {
         title: "结束时间",
         key: "updatedAt",
-        width: 110,
+        // width: 110,
         render: (text, record, index) => {
-          return moment(record.updatedAt).format("YYYY-MM-DD hh:mm:ss");
+          let time = GetTimeOutput(record.updatedAt);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
         }
       }
     ];

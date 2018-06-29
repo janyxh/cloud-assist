@@ -6,10 +6,13 @@ import { Button, Table, message, Popconfirm } from "antd";
 import {
   scripts,
   selectGame,
+  selectChannelName,
+  // getGameInfo,
   addScripts,
   editScripts,
   deleteScripts
 } from "../../api/api";
+import { getDurning, GetTimeOutput } from "../../Common";
 
 class Task extends React.Component {
   constructor(props) {
@@ -18,6 +21,7 @@ class Task extends React.Component {
       loading: true,
       data: [],
       gameList: [], // 游戏列表数组（新增用）
+      channel_names: [], // 渠道商列表数组（新增用）
       searchParams: {},
       pagination: {
         pageSize: 10,
@@ -41,6 +45,7 @@ class Task extends React.Component {
     };
     this.getList = this.getList.bind(this);
     this.getGameList = this.getGameList.bind(this);
+    this.getChannelNames = this.getChannelNames.bind(this);
     this.onChange = this.onChange.bind(this);
   }
 
@@ -61,7 +66,7 @@ class Task extends React.Component {
           if (res.data) {
             this.setState({
               data: res.data.list,
-              pagination: { total: res.total, current: res.page_index }
+              pagination: { total: res.data.total, current: res.data.pageNum }
             });
           } else {
             this.setState({
@@ -79,19 +84,18 @@ class Task extends React.Component {
   };
 
   // 获取游戏列表
-  getGameList = params => {
+  getGameList = () => {
+    const params = { size: 500 };
     selectGame(params)
       .then(res => {
-        this.setState({ loading: false });
         const { code } = res;
         if (code === "00") {
           let arr = [];
-          // res.data.list.map(item => {
-          //   arr.push(item.game_name);
-          // });
-          res.data.list.forEach(item => {
-            arr.push({ game_id: item.game_id, game_name: item.game_name });
-          });
+          if (res.data.list && res.data.list.length > 0) {
+            res.data.list.forEach(item => {
+              arr.push({ game_id: item.game_id, game_name: item.game_name });
+            });
+          }
 
           this.setState({
             gameList: arr
@@ -105,54 +109,54 @@ class Task extends React.Component {
       });
   };
 
+  // 获取渠道商列表
+  getChannelNames = id => {
+    const params = {
+      game_id: id
+    };
+    selectChannelName(params)
+      .then(res => {
+        this.setState({ loading: false });
+        const { code } = res;
+        if (code === "00") {
+          this.setState({
+            channel_names: res.data.channel_names || []
+          });
+        } else {
+          message.error(res.message);
+        }
+      })
+      .catch(e => {
+        console.error(e);
+      });
+  };
+
   // ---------------------------------------------  搜索   -------------------------------------------------
 
   handelSearch = params => {
+    delete this.state.searchParams.page;
     const gameParams = params;
     // 转换时间格式
-    if (gameParams && gameParams.created_at) {
-      gameParams.createStartTime =
-        moment(gameParams.created_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.createEndTime =
-        moment(gameParams.created_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.created_at &&
-      gameParams.createStartTime
-    ) {
-      gameParams.createStartTime = "";
-      gameParams.createEndTime = "";
-    }
-    if (gameParams && gameParams.update_at) {
-      gameParams.updateStartTime =
-        moment(gameParams.update_at[0]).format("YYYY-MM-DD") + " 00:00:00";
-      gameParams.updateEndTime =
-        moment(gameParams.update_at[1]).format("YYYY-MM-DD") + " 23:59:59";
-    } else if (
-      gameParams &&
-      !gameParams.update_at &&
-      gameParams.updateStartTime
-    ) {
-      gameParams.updateStartTime = "";
-      gameParams.updateEndTime = "";
-    }
-
-    delete gameParams.created_at;
-    delete gameParams.update_at;
-
-    this.setState({
-      searchParams: Object.assign(this.state.searchParams, gameParams),
-      loading: true
-    });
+    getDurning(gameParams, "created_at", "created_from", "created_to");
+    getDurning(gameParams, "updated_at", "updated_from", "updated_to");
+    this.setState(
+      {
+        searchParams: gameParams,
+        loading: true
+      },
+      () => {
+        this.getList(this.state.searchParams);
+      }
+    );
     console.log(this.state.searchParams);
-    this.getList(this.state.searchParams);
   };
 
   // 重置
   handleReset = () => {
     this.setState({
       searchParams: {},
-      loading: true
+      loading: true,
+      channel_names: []
     });
     this.getList({});
   };
@@ -165,7 +169,8 @@ class Task extends React.Component {
       pagination: {
         current: page
       },
-      searchParams: Object.assign(this.state.searchParams, { page: page })
+      searchParams: Object.assign(this.state.searchParams, { page: page }),
+      loading: true
     });
 
     this.getList(this.state.searchParams);
@@ -175,32 +180,61 @@ class Task extends React.Component {
 
   // 打开弹出框
   showModal = () => {
-    this.setState({
-      isEdit: false,
-      visible: true,
-      values: {},
-      scriptUrl: ""
-    });
+    this.setState(
+      {
+        isEdit: false,
+        visible: true,
+        values: {},
+        scriptUrl: ""
+      },
+      () => {
+        if (
+          document.querySelectorAll(".ant-modal-body") &&
+          document.querySelectorAll(".ant-modal-body").length > 0
+        ) {
+          setTimeout(() => {
+            document.querySelectorAll(".ant-modal-body").forEach(element => {
+              element.scrollTop = 0;
+            });
+          }, 50);
+        }
+      }
+    );
     this.getGameList();
+    // this.getChannelNames();
   };
 
   // 编辑
   handleEdit = values => {
     let option = [];
-    values.script_options.forEach((item, index) => {
-      option.push(item.option);
-    });
+    if (values.script_options && values.script_options.length > 0) {
+      values.script_options.forEach((item, index) => {
+        option.push(item.option);
+      });
+    }
     console.log(option);
-    this.setState({
-      isEdit: true,
-      visible: true,
-      values: Object.assign(this.state.values, values),
-      scriptOptions: values.script_options,
-      option: option,
-      scriptUrl: values.resource_address
-    });
-    console.log(this.state.values);
-    console.log(values.script_options.option);
+    this.setState(
+      {
+        isEdit: true,
+        visible: true,
+        values: Object.assign(this.state.values, values),
+        scriptOptions: values.script_options,
+        option: option,
+        scriptUrl: values.resource_address
+      },
+      () => {
+        if (
+          document.querySelectorAll(".ant-modal-body") &&
+          document.querySelectorAll(".ant-modal-body").length > 0
+        ) {
+          setTimeout(() => {
+            document.querySelectorAll(".ant-modal-body").forEach(element => {
+              element.scrollTop = 0;
+            });
+          }, 50);
+        }
+      }
+    );
     this.getGameList();
   };
 
@@ -215,7 +249,8 @@ class Task extends React.Component {
   };
 
   // 点击弹出框的确定
-  handleOk = (values, isEdit) => {
+  handleOk = (values, isEdit, fn) => {
+    delete this.state.searchParams.page;
     console.log("点击ok");
     this.setState({
       confirmLoading: true
@@ -232,12 +267,12 @@ class Task extends React.Component {
       if (arrKeys.indexOf(`name${i}`) < 0) {
         break;
       }
-      ScriptOption.push({ name: values[`name${i}`], option: [] });
+      ScriptOption.push({ name: values[`name${i}`].trim(), option: [] });
       for (let j = 0; j < Number.POSITIVE_INFINITY; j++) {
         if (arrKeys.indexOf(`option${i}s${j}`) < 0) {
           break;
         }
-        ScriptOption[i].option.push(values[`option${i}s${j}`]);
+        ScriptOption[i].option.push(values[`option${i}s${j}`].trim());
       }
     }
 
@@ -253,10 +288,19 @@ class Task extends React.Component {
             this.setState({
               visible: false,
               confirmLoading: false,
-              scriptUrl: ""
+              scriptUrl: "",
+              values: {},
+              scriptOptions: [
+                {
+                  name: "",
+                  option: [""]
+                }
+              ],
+              option: [[""]]
             });
             message.success(res.message);
-            this.getList({});
+            this.getList(this.state.searchParams);
+            fn && fn();
           } else {
             message.error(res.message);
           }
@@ -275,10 +319,18 @@ class Task extends React.Component {
               visible: false,
               confirmLoading: false,
               scriptUrl: "",
-              values: {}
+              values: {},
+              scriptOptions: [
+                {
+                  name: "",
+                  option: [""]
+                }
+              ],
+              option: [[""]]
             });
             message.success(res.message);
-            this.getList({});
+            this.getList(this.state.searchParams);
+            fn && fn();
           } else {
             message.error(res.message);
           }
@@ -306,12 +358,10 @@ class Task extends React.Component {
 
   // 添加脚本列表
   handleAdd = () => {
-    console.log("添加");
-
-    let newScriptOptions = this.state.scriptOptions;
+    let newScriptOptions = JSON.parse(JSON.stringify(this.state.scriptOptions));
     newScriptOptions.push({ name: "", option: [""] });
 
-    let newOption = this.state.option;
+    let newOption = JSON.parse(JSON.stringify(this.state.option));
     newOption.push([""]);
 
     this.setState({
@@ -321,11 +371,11 @@ class Task extends React.Component {
   };
   // 减去脚本列表
   handleMinus = item => {
-    console.log("减去");
-    let newScriptOptions = this.state.scriptOptions;
-    newScriptOptions.splice(newScriptOptions.indexOf(item), 1);
+    let newScriptOptions = JSON.parse(JSON.stringify(this.state.scriptOptions));
+    let num = newScriptOptions.indexOf(item);
+    newScriptOptions.splice(num, 1);
 
-    let newOption = this.state.option;
+    let newOption = JSON.parse(JSON.stringify(this.state.option));
     newOption.splice(newOption.indexOf(item), 1);
 
     this.setState({
@@ -335,13 +385,12 @@ class Task extends React.Component {
   };
   // 添加配置项列表
   handleAddOption = index => {
-    console.log("添加配置项");
-
-    let newScriptOptions = this.state.scriptOptions;
+    let newScriptOptions = JSON.parse(JSON.stringify(this.state.scriptOptions));
     newScriptOptions[index].option.push("");
 
-    let newOption = this.state.option;
+    let newOption = JSON.parse(JSON.stringify(this.state.option));
     newOption[index].push("");
+
     this.setState({
       scriptOptions: newScriptOptions,
       option: newOption
@@ -349,17 +398,11 @@ class Task extends React.Component {
   };
   // 减去配置项列表
   handleMinusOption = (item, index) => {
-    console.log("减去配置项");
-    console.log("item/" + item);
-    console.log(item);
+    let newScriptOptions = JSON.parse(JSON.stringify(this.state.scriptOptions));
+    let num = newScriptOptions[index].option.indexOf(item);
+    newScriptOptions[index].option.splice(num, 1);
 
-    let newScriptOptions = this.state.scriptOptions;
-    newScriptOptions[index].option.splice(
-      newScriptOptions[index].option.indexOf(item),
-      1
-    );
-
-    let newOption = this.state.option;
+    let newOption = JSON.parse(JSON.stringify(this.state.option));
     newOption[index].splice(newOption[index].indexOf(item), 1);
 
     this.setState({
@@ -371,13 +414,14 @@ class Task extends React.Component {
   // ---------------------------------------------  删除   -------------------------------------------------
 
   confirm = id => {
+    delete this.state.searchParams.page;
     const params = id;
     deleteScripts(params)
       .then(res => {
         const { code } = res;
         if (code === "00") {
           message.success(res.message);
-          this.getList({});
+          this.getList(this.state.searchParams);
         } else {
           message.error(res.message);
         }
@@ -392,6 +436,8 @@ class Task extends React.Component {
       {
         title: "序号",
         key: "index",
+        // width: 80,
+        // fixed: "left",
         render: (text, record, index) => {
           return index + 1;
         }
@@ -400,11 +446,45 @@ class Task extends React.Component {
         title: "脚本ID",
         dataIndex: "script_id",
         key: "script_id"
+        // width: 80,
+        // fixed: "left"
       },
       {
         title: "脚本名称",
         dataIndex: "script_name",
         key: "script_name"
+      },
+      {
+        title: "脚本配置明细",
+        key: "script_options",
+        width: 150,
+        render: (text, record) => {
+          let scriptOptions = record.script_options;
+          if (typeof scriptOptions === "string") {
+            return false;
+          }
+          let option = "";
+          if (scriptOptions.length === 0) {
+            option = "";
+          } else {
+            if (scriptOptions && scriptOptions.length > 0) {
+              scriptOptions.forEach((item, index) => {
+                index === 0
+                  ? (option += `[${item.name}：`)
+                  : (option += `，[${item.name}：`);
+                if (item.option && item.option.length > 0) {
+                  item.option.forEach((itemOption, indexOP) => {
+                    indexOP === 0
+                      ? (option += `${itemOption}`)
+                      : (option += `，${itemOption}`);
+                  });
+                }
+                option += "]";
+              });
+            }
+          }
+          return option;
+        }
       },
       {
         title: "资源地址",
@@ -429,11 +509,18 @@ class Task extends React.Component {
         }
       },
       {
+        title: "好用度",
+        dataIndex: "star_count",
+        key: "star_count"
+      },
+      {
         title: "创建时间",
         key: "created_at",
         width: 110,
         render: (text, record, index) => {
-          return moment(record.created_at).format("YYYY-MM-DD hh:mm:ss");
+          let time = GetTimeOutput(record.created_at);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
         }
       },
       {
@@ -441,13 +528,16 @@ class Task extends React.Component {
         key: "updated_at",
         width: 110,
         render: (text, record, index) => {
-          return moment(record.created_at).format("YYYY-MM-DD hh:mm:ss");
+          let time = GetTimeOutput(record.updated_at);
+          time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+          return time;
         }
       },
       {
         title: "操作",
         key: "action",
-        width: 140,
+        width: 100,
+        // fixed:"right",
         render: (text, record) => {
           // console.log(text);
           // console.log(record);
@@ -477,7 +567,9 @@ class Task extends React.Component {
         </div>
         <ScriptForm
           gameList={this.state.gameList}
+          channel_names={this.state.channel_names}
           params={this.state.searchParams}
+          onChangeGame={this.getChannelNames}
           handelSearch={this.handelSearch}
           handleReset={this.handleReset}
         />
@@ -488,6 +580,7 @@ class Task extends React.Component {
           dataSource={this.state.data}
           columns={columns}
           pagination={this.state.pagination}
+          // scroll={handleTableWidth(1366, 1600)}
         />
         <ScriptAdd
           visible={this.state.visible}
@@ -501,6 +594,8 @@ class Task extends React.Component {
           handleUploadLoading={this.handleUploadLoading}
           loadingUploadScript={this.state.loadingUploadScript}
           gameList={this.state.gameList}
+          channel_names={this.state.channel_names}
+          onChangeGame={this.getChannelNames}
           handleOk={this.handleOk}
           handleCancel={this.handleCancel}
           handleAdd={this.handleAdd}

@@ -1,4 +1,5 @@
 import React from "react";
+import { disabledDate } from "../../Common";
 import { Form, Row, Col, Input, Button, Select, DatePicker } from "antd";
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -9,6 +10,9 @@ class ScriptSearchForm extends React.Component {
   handleSearch = e => {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
+      if (err) {
+        return;
+      }
       this.props.handelSearch(values);
     });
   };
@@ -17,6 +21,23 @@ class ScriptSearchForm extends React.Component {
   handleReset = () => {
     this.props.form.resetFields();
     this.props.handleReset();
+  };
+
+  // 改变游戏清空渠道商值
+  onChangeGame = id => {
+    this.props.form.setFieldsValue({
+      channel_name: undefined
+    });
+    this.props.onChangeGame(id);
+  };
+
+  // 验证脚本ID
+  scriptIdValidate = (rule, value, callback) => {
+    if (value !== "" && value && !Number.isInteger(Number(value))) {
+      callback(new Error("请输入整数"));
+    } else {
+      callback();
+    }
   };
 
   render() {
@@ -30,7 +51,8 @@ class ScriptSearchForm extends React.Component {
                 rules: [
                   {
                     required: false
-                  }
+                  },
+                  { validator: this.scriptIdValidate }
                 ]
               })(<Input placeholder="请输入脚本ID" />)}
             </FormItem>
@@ -55,12 +77,17 @@ class ScriptSearchForm extends React.Component {
                   }
                 ]
               })(
-                <Select placeholder="请选择所属游戏">
-                  {this.props.gameList.map(item => (
-                    <Option value={item.game_id} key={item.game_id}>
-                      {item.game_name}
-                    </Option>
-                  ))}
+                <Select
+                  placeholder="请选择所属游戏"
+                  onChange={this.onChangeGame}
+                >
+                  {this.props.gameList && this.props.gameList.length > 0
+                    ? this.props.gameList.map(item => (
+                        <Option value={item.game_id} key={item.game_id}>
+                          {item.game_name}
+                        </Option>
+                      ))
+                    : null}
                 </Select>
               )}
             </FormItem>
@@ -73,7 +100,18 @@ class ScriptSearchForm extends React.Component {
                     required: false
                   }
                 ]
-              })(<Input placeholder="请输入渠道商名称" />)}
+              })(
+                <Select placeholder="请选择所属渠道商">
+                  {this.props.channel_names &&
+                  this.props.channel_names.length > 0
+                    ? this.props.channel_names.map((item, index) => (
+                        <Option value={item} key={index}>
+                          {item}
+                        </Option>
+                      ))
+                    : null}
+                </Select>
+              )}
             </FormItem>
           </Col>
           <Col span={4}>
@@ -92,6 +130,25 @@ class ScriptSearchForm extends React.Component {
               )}
             </FormItem>
           </Col>
+          <Col span={4}>
+            <FormItem label="好用度">
+              {getFieldDecorator(`star_count`, {
+                rules: [
+                  {
+                    required: false
+                  }
+                ]
+              })(
+                <Select placeholder="请选择好用度">
+                  <Option value={1}>1</Option>
+                  <Option value={2}>2</Option>
+                  <Option value={3}>3</Option>
+                  <Option value={4}>4</Option>
+                  <Option value={5}>5</Option>
+                </Select>
+              )}
+            </FormItem>
+          </Col>
           <Col span={6}>
             <FormItem label="创建时间">
               {getFieldDecorator(`created_at`, {
@@ -101,22 +158,26 @@ class ScriptSearchForm extends React.Component {
                     message: "Input something!"
                   }
                 ]
-              })(<RangePicker format="YYYY-MM-DD" />)}
+              })(
+                <RangePicker format="YYYY-MM-DD" disabledDate={disabledDate} />
+              )}
             </FormItem>
           </Col>
           <Col span={6}>
             <FormItem label="更新时间">
-              {getFieldDecorator(`update_at`, {
+              {getFieldDecorator(`updated_at`, {
                 rules: [
                   {
                     required: false,
                     message: "Input something!"
                   }
                 ]
-              })(<RangePicker format="YYYY-MM-DD" />)}
+              })(
+                <RangePicker format="YYYY-MM-DD" disabledDate={disabledDate} />
+              )}
             </FormItem>
           </Col>
-          <Col span={4}>
+          <Col span={6}>
             <FormItem>
               <Button type="primary" htmlType="submit" icon="search">
                 搜索
