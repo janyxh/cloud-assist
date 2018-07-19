@@ -278,10 +278,25 @@ class Task extends React.Component {
         key: "timeConsume",
         width: 110,
         render: (text, record) => {
-          let time = new Date(record.timeConsume);
-          time.setHours(time.getHours() - 8);
-          const day = time.getDate() - 1 ? time.getDate() - 1 + " " : "";
-          return day + moment(time).format("HH:mm:ss");
+          let h = 0;
+          let m = 0;
+          let s = 0;
+          h = Math.floor(record.timeConsume / 1000 / 60 / 60);
+          let Mtime = record.timeConsume - h * 1000 * 60 * 60;
+          m = Math.floor(Mtime / 1000 / 60);
+          let Stime = Mtime - m * 1000 * 60;
+          s = Math.floor(Stime / 1000);
+
+          if (h < 10) {
+            h = "0" + h;
+          }
+          if (m < 10) {
+            m = "0" + m;
+          }
+          if (s < 10) {
+            s = "0" + s;
+          }
+          return `${h}:${m}:${s}`;
         }
       },
       {

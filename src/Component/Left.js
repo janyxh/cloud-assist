@@ -52,8 +52,9 @@ class Left extends React.Component {
     return (
       <aside>
         <div className="logo">
-          <Icon type="cloud-o" style={{ fontSize: 60, color: "#ffffff" }} />
+          <Icon type="cloud-o" style={{ fontSize: 52, color: "#ffffff" }} />
           <h2>云辅助管理系统</h2>
+          <p>V1.1.00</p>
         </div>
         <p>
           <span style={{ color: "#ddd", margin: "0 20px" }}>

@@ -19,10 +19,6 @@ import Script from "./Pages/Script";
 import User from "./Pages/Auth/User";
 import Role from "./Pages/Auth/Role";
 import Authority from "./Pages/Auth/Authority";
-// import Test from "./Pages/Test/Test";
-// import Test2 from "./Pages/Test/Test2";
-// import Test3 from "./Pages/Test/Test3";
-// import Test4 from "./Pages/Test/Test4";
 
 class RootRouter extends React.Component {
   render() {
@@ -48,10 +44,6 @@ class RootRouter extends React.Component {
             <Route path="/User" component={User} />
             <Route path="/Role" component={Role} />
             <Route path="/Authority" component={Authority} />
-            {/* <Route path="/Test" component={Test} />
-            <Route path="/Test2" component={Test2} />
-            <Route path="/Test3" component={Test3} />
-            <Route path="/Test4" component={Test4} /> */}
           </Switch>
         </Frame>
       </Switch>

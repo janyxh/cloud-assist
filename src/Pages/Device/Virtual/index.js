@@ -2,6 +2,7 @@ import React from "react";
 import VirtualForm from "../../../Component/Device/Virtual/Form";
 import OperationsTable from "../../../Component/Device/Virtual/Operation";
 import DetailTable from "../../../Component/Device/Virtual/TableDetail";
+import ServerEdit from "../../../Component/Device/Virtual/Edit";
 // import Server from "../../../Component/Device/Virtual/Server";
 import { Table, message, Button, Popconfirm, Affix } from "antd";
 import { servers, serversAction, editServers } from "../../../api/api";
@@ -28,13 +29,13 @@ class Games extends React.Component {
         total: 0,
         onChange: this.onChange
       },
-      visible: false,
+      visible: false, //查看设备操作日志
       confirmLoading: false,
-      isEdit: false,
       values: {},
       visibleDetail: false, // 隐藏  查看
       serverId: "", // id  查看
-      visibleServer: false
+      // visibleServer: false,
+      visibleEdit: false // 编辑
     };
     this.onWindowResize = this.onWindowResize.bind(this);
     this.getList = this.getList.bind(this);
@@ -307,6 +308,72 @@ class Games extends React.Component {
       visibleDetail: false
     });
   };
+  // // ---------------------------------------------  编辑云手机   -------------------------------------------------
+
+  // // 编辑云手机
+  // handleEdit = values => {
+  //   this.setState(
+  //     {
+  //       values: values,
+  //       visibleEdit: true
+  //     },
+  //     () => {
+  //       if (
+  //         document.querySelectorAll(".ant-modal-body") &&
+  //         document.querySelectorAll(".ant-modal-body").length > 0
+  //       ) {
+  //         setTimeout(() => {
+  //           document.querySelectorAll(".ant-modal-body").forEach(element => {
+  //             element.scrollTop = 0;
+  //           });
+  //         }, 50);
+  //       }
+  //     }
+  //   );
+  // };
+
+  // // 点击弹出框的关闭
+  // handleCancel = () => {
+  //   this.setState({
+  //     visibleEdit: false
+  //   });
+  // };
+
+  // // 点击弹出框的确定
+  // handleOk = (values, fn) => {
+  //   delete this.state.searchParams.page;
+  //   this.setState({
+  //     confirmLoading: true
+  //   });
+
+  //   let params = {
+  //     server_name: values.server_name,
+  //     server_status: values.server_status,
+  //     is_forbidden: values.is_forbidden
+  //   };
+  //   const server_id = this.state.values.server_id;
+  //   editServers(server_id, params)
+  //     .then(res => {
+  //       const { code } = res;
+  //       if (code === "00") {
+  //         this.setState({
+  //           visibleEdit: false,
+  //           confirmLoading: false,
+  //           values: {}
+  //         });
+  //         message.success(res.message);
+  //         this.getList(this.state.searchParams);
+  //       } else {
+  //         message.error(res.message);
+  //         this.setState({
+  //           confirmLoading: false
+  //         });
+  //       }
+  //     })
+  //     .catch(e => {
+  //       console.error(e);
+  //     });
+  // };
 
   // ---------------------------------------------  连接云手机   -------------------------------------------------
 
@@ -509,6 +576,7 @@ class Games extends React.Component {
               <a onClick={this.handleDetail.bind(this, record.server_id)}>
                 查看
               </a>
+              {/* <a onClick={this.handleEdit.bind(this, record)}>编辑</a> */}
               {/* <a onClick={this.handleConnect.bind(this, record.server_id)}>
                 连接
               </a> */}
@@ -576,6 +644,13 @@ class Games extends React.Component {
           visible={this.state.visibleDetail}
           serverId={this.state.serverId}
           onCancel={this.handleCancelDetail}
+        />
+        <ServerEdit
+          visible={this.state.visibleEdit}
+          confirmLoading={this.state.confirmLoading}
+          values={this.state.values}
+          handleOk={this.handleOk}
+          handleCancel={this.handleCancel}
         />
         {/* <Server
           ref="Server"

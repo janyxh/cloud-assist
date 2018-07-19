@@ -99,11 +99,11 @@ class GamesSearchForm extends React.Component {
                 ]
               })(
                 <Select placeholder="请选择连接状态">
-                  <Option value={1}>未占用</Option>
+                  <Option value={1}>未连接</Option>
                   <Option value={2}>用户</Option>
                   <Option value={3}>管理员</Option>
                   <Option value={4}>管理员/用户</Option>
-                  <Option value={5}>任务占用</Option>
+                  <Option value={5}>任务连接</Option>
                 </Select>
               )}
             </FormItem>

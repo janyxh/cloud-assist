@@ -3,6 +3,7 @@ import { Icon, Spin } from "antd";
 
 class UploadIcon extends React.Component {
   loadImg = () => {
+    console.log(this.refs.inputfile)
     const file = this.refs.inputfile.files[0];
     // console.log(file);
     const isType = this.props.handleCheckType(file);

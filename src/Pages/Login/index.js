@@ -2,6 +2,7 @@ import React from "react";
 import "./index.css";
 import { withRouter } from "react-router-dom";
 import { checkLogin } from "../../api/api";
+// import { setCookie } from "../../Common";
 
 import { Form, Icon, Input, Button, message } from "antd";
 const FormItem = Form.Item;
@@ -33,11 +34,17 @@ class NormalLoginForm extends React.Component {
               //   nickName: res.data.cloudUserVO.nickName
               //   }
               sessionStorage.setItem("userName", res.data.cloudUserVO.nickName);
+              // sessionStorage.setItem("loginAccount", res.data.cloudUserVO.loginAccount);
               sessionStorage.setItem("SelectedKeys", `key${0}`);
               sessionStorage.setItem("OpenKeys", "");
+              // setCookie("JSESSIONID", "CFB721191A48E1357C10C30D917A77C0");
+              // setCookie(
+              //   "_cloud",
+              //   "hE8lamKueWF0Woj-8tQ4TvaPwaMxdhCj8JXpRfBEBodCU7XwBshB5Q"
+              // );
               // setTimeout(() => {
               this.props.history.push("/virtual");
-              // }, 3000);
+              // }, 1000);
             } else {
               message.error(res.message);
             }
@@ -100,6 +107,7 @@ class NormalLoginForm extends React.Component {
             {/* Or <a href="">register now!</a> */}
           </FormItem>
         </Form>
+        <div className="footer">云辅助后台系统 V1.1.00</div>
       </div>
     );
   }

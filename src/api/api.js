@@ -6,9 +6,9 @@ import { message } from "antd";
 // import time from "../Common/timeout";
 
 //设置默认请求头
-axios.defaults.headers = {
-  "X-Requested-With": "XMLHttpRequest"
-};
+// axios.defaults.headers = {
+//   "X-Requested-With": "XMLHttpRequest"
+// };
 // 带cookie请求
 axios.defaults.withCredentials = true;
 // axios.defaults.timeout = time;
@@ -93,15 +93,40 @@ export const loginOut = params => {
     .then(res => res.data);
 };
 
-// -------------------------------------------  权限管理  -----------------------------------------------------
+// -------------------------------------------  用户管理  -----------------------------------------------------
 
-//获取用户列表
+// 获取用户列表
 export const getUserList = params => {
   return axios
     .get(`${base}/user/getUserList`, { params: params })
     .then(res => res.data);
 };
 
+// 添加用户
+export const addCloudUser = params => {
+  return axios.post(`${base}/user/addCloudUser`, params).then(res => res.data);
+};
+
+// 编辑用户
+export const modifyCloudUser = params => {
+  return axios
+    .post(`${base}/user/modifyCloudUser`, params)
+    .then(res => res.data);
+};
+
+// 删除用户
+export const deleteCloudUser = params => {
+  return axios
+    .post(`${base}/user/deleteCloudUser`, params)
+    .then(res => res.data);
+};
+
+// 修改密码
+export const modifyPassword = params => {
+  return axios
+    .post(`${base}/user/modifyPassword`, params)
+    .then(res => res.data);
+};
 // -------------------------------------------  虚拟机管理  -----------------------------------------------------
 
 // 获取虚拟机列表

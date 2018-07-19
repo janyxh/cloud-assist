@@ -230,15 +230,15 @@ class OTA extends React.Component {
         key: "image_name"
       },
       {
-        title: "镜像包大小",
+        title: "镜像包大小(MB)",
         dataIndex: "image_size",
         key: "image_size"
       },
-      {
-        title: "镜像包路径",
-        dataIndex: "ftp_path",
-        key: "ftp_path"
-      },
+      // {
+      //   title: "镜像包路径",
+      //   dataIndex: "ftp_path",
+      //   key: "ftp_path"
+      // },
       {
         title: "备注",
         dataIndex: "memo",
@@ -264,34 +264,34 @@ class OTA extends React.Component {
           return time;
         }
       },
-      {
-        title: "创建结束时间",
-        key: "create_time",
-        width: 110,
-        render: (text, record, index) => {
-          if (record.create_time) {
-            let time = GetTimeOutput(record.create_time);
-            time = moment(time).format("YYYY-MM-DD HH:mm:ss");
-            return time;
-          }
-        }
-      },
-      {
-        title: "更新开始时间",
-        key: "update_time",
-        width: 110,
-        render: (text, record, index) => {
-          if (record.update_time) {
-            let time = GetTimeOutput(record.update_time);
-            time = moment(time).format("YYYY-MM-DD HH:mm:ss");
-            return time;
-          }
-        }
-      },
+      // {
+      //   title: "创建结束时间",
+      //   key: "create_time",
+      //   width: 110,
+      //   render: (text, record, index) => {
+      //     if (record.create_time) {
+      //       let time = GetTimeOutput(record.create_time);
+      //       time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+      //       return time;
+      //     }
+      //   }
+      // },
+      // {
+      //   title: "更新开始时间",
+      //   key: "update_time",
+      //   width: 110,
+      //   render: (text, record, index) => {
+      //     if (record.update_time) {
+      //       let time = GetTimeOutput(record.update_time);
+      //       time = moment(time).format("YYYY-MM-DD HH:mm:ss");
+      //       return time;
+      //     }
+      //   }
+      // },
       {
         title: "操作",
         key: "action",
-        width: 140,
+        width: 100,
         fixed: document.body.clientWidth <= 1366 ? "right" : "",
         render: (text, record) => {
           return (
@@ -318,7 +318,7 @@ class OTA extends React.Component {
           dataSource={this.state.data}
           columns={columns}
           pagination={this.state.pagination}
-          scroll={this.state.tableScroll}
+          // scroll={this.state.tableScroll}
         />
         <Detail
           ref="Detail"

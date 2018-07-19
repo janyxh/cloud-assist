@@ -1,11 +1,14 @@
 import React from "react";
 
-class Games extends React.Component {
+class AppUsers extends React.Component {
   render() {
     return (
-        <div></div>
+      <div>
+        <h1>用户意见反馈管理</h1>
+        <hr />
+      </div>
     );
   }
 }
 
-export default Games;
+export default AppUsers;

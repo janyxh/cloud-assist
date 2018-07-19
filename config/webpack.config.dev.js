@@ -27,13 +27,13 @@ const env = getClientEnvironment(publicUrl);
 // The production configuration is different and lives in a separate file.
 module.exports = {
   // devServer: {
+  //   historyApiFallback: true,
+  //   noInfo: true,
   //   port: "3000", //设置端口号
   //   //其实很简单的，只要配置这个参数就可以了
   //   proxy: {
-  //     // 请求到 '/api' 下 的请求都会被代理到 target： http://debug.xxx.com 中
   //     "/api/*": {
-  //       target: "http://192.168.15.159:80/api",
-  //       secure: false, // 接受 运行在 https 上的服务
+  //       target: "http://yfz.5173.com/api",
   //       changeOrigin: true
   //     }
   //   }

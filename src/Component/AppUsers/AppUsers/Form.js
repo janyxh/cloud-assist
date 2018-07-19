@@ -1,5 +1,5 @@
 import React from "react";
-import { disabledDate } from "../../Common";
+import { disabledDate } from "../../../Common";
 import { Form, Row, Col, Input, Button, DatePicker } from "antd";
 const FormItem = Form.Item;
 const { RangePicker } = DatePicker;

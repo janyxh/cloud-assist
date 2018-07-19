@@ -1,31 +1,41 @@
-
 .components-form-demo-normal-login {
-    max-width: 400px;
-    margin: 20vh auto;
+  max-width: 400px;
+  margin: 0 auto;
+  padding-top: 20vh;
+}
+.components-form-demo-normal-login .logo {
+  // display: flex;
+  width: 27rem;
+  height: 6rem;
+  margin: auto;
+  text-align: center;
+  padding: 1rem;
+  position: relative;
+  i {
+    position: absolute;
+    left: 4rem;
+    vertical-align: middle;
   }
-  .components-form-demo-normal-login .logo {
-    // display: flex;
-    width: 27rem;
-    height: 6rem;
-    margin: auto;
-    text-align: center;
-    padding: 1rem;
-    position: relative;
-    i {
-      position: absolute;
-      left: 4rem;
-      vertical-align: middle;
-    }
-    span {
-      color: #1890ff;
-      font-size: 2rem;
-      position: absolute;
-      left: 8rem;
-    }
+  span {
+    color: #1890ff;
+    font-size: 2rem;
+    position: absolute;
+    left: 8rem;
   }
-  .components-form-demo-normal-login .login-form-forgot {
-    float: right;
-  }
-  .components-form-demo-normal-login .login-form-button {
-    width: 100%;
-  }
+}
+.components-form-demo-normal-login .login-form-forgot {
+  float: right;
+}
+.components-form-demo-normal-login .login-form-button {
+  width: 100%;
+}
+
+.footer {
+  width: 100%;
+  position: fixed;
+  left: 0;
+  bottom: 20px;
+  // background: #1890ff;
+  // color: #ffffff;
+  text-align: center;
+}
